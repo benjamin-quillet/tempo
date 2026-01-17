@@ -707,7 +707,7 @@ export default function Home() {
                   <div className="mt-6 flex items-center gap-4">
                     <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
                       <Image
-                        src="/benjamin.jpeg"
+                        src="/benjamin.JPEG"
                         alt="Benjamin"
                         fill
                         className="object-cover"
