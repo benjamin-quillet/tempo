@@ -760,7 +760,7 @@ export default function Home() {
                 <div className="absolute -inset-8 rounded-[34px] bg-[linear-gradient(135deg,rgba(131,199,177,.18),rgba(62,129,190,.14))] blur-2xl" />
                 <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-white/5 shadow-[0_22px_80px_rgba(0,0,0,.28)]">
                   <Image
-                    src="/écran1.png"
+                    src="/écran2.png"
                     alt="Aperçu TEMPO"
                     width={1400}
                     height={1000}
