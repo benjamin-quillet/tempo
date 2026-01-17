@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(131, 199, 177, 0.35);
+}
+
+body {
+  background: #071218;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* -------- Reviews marquee -------- */
+.marquee {
+  animation: tempo-marquee 28s linear infinite;
+  will-change: transform;
+}
+
+.group:hover .marquee {
+  animation-duration: 45s; /* ralentit au survol */
+}
+
+@keyframes tempo-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation: none;
+    transform: none;
+  }
+}
