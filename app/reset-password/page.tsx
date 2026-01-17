@@ -1,15 +1,13 @@
 // app/reset-password/page.tsx
 "use client";
 
+export const dynamic = "force-dynamic";
+// (optionnel) export const revalidate = 0;
+
 import Image from "next/image";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-
-/* --------------------------------- Supabase -------------------------------- */
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnon);
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /* --------------------------------- Reveal --------------------------------- */
 type RevealProps = {
@@ -56,11 +54,7 @@ function Reveal({ children, className = "", delayMs = 0 }: RevealProps) {
 }
 
 /* ------------------------------- Section Shell ------------------------------ */
-function SnapSection({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function SnapSection({ children }: { children: React.ReactNode }) {
   const dark =
     "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]";
 
@@ -205,6 +199,14 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const sp = useSearchParams();
 
+  // ✅ Crée le client au runtime + fallback si env manquantes
+  const supabase: SupabaseClient | null = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !anon) return null;
+    return createClient(url, anon);
+  }, []);
+
   const [hydrating, setHydrating] = useState(true);
   const [hasRecoverySession, setHasRecoverySession] = useState(false);
 
@@ -212,20 +214,37 @@ export default function ResetPasswordPage() {
   const [pwd2, setPwd2] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ kind: "info" | "success" | "error"; title: string; desc?: string } | null>(null);
+  const [msg, setMsg] = useState<{
+    kind: "info" | "success" | "error";
+    title: string;
+    desc?: string;
+  } | null>(null);
 
-  // Beaucoup de liens Supabase (email) arrivent avec:
-  // - soit ?code=... (PKCE)
-  // - soit #access_token=...&refresh_token=... (implicit)
-  // On gère les 2.
   useEffect(() => {
     const run = async () => {
-      setMsg({ kind: "info", title: "Vérification du lien…", desc: "On prépare la page de réinitialisation." });
+      // ✅ si env manquantes, on ne casse pas le build, on affiche un message
+      if (!supabase) {
+        setMsg({
+          kind: "error",
+          title: "Configuration manquante",
+          desc:
+            "Ajoute NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY dans Vercel (Production), puis redeploy.",
+        });
+        setHasRecoverySession(false);
+        setHydrating(false);
+        return;
+      }
+
+      setMsg({
+        kind: "info",
+        title: "Vérification du lien…",
+        desc: "On prépare la page de réinitialisation.",
+      });
 
       try {
         const url = new URL(window.location.href);
 
-        // 1) si hash tokens => setSession
+        // 1) hash tokens => setSession
         if (url.hash && url.hash.includes("access_token=")) {
           const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
           const access_token = hashParams.get("access_token");
@@ -238,19 +257,17 @@ export default function ResetPasswordPage() {
             });
             if (error) throw error;
 
-            // nettoie l’URL (plus propre)
             url.hash = "";
             window.history.replaceState({}, "", url.toString());
           }
         }
 
-        // 2) si PKCE code => exchangeCodeForSession
+        // 2) PKCE code => exchangeCodeForSession
         const code = sp.get("code");
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
 
-          // nettoie l’URL (plus propre)
           url.searchParams.delete("code");
           window.history.replaceState({}, "", url.toString());
         }
@@ -288,16 +305,18 @@ export default function ResetPasswordPage() {
 
     void run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // sp est volontairement ignoré (Next SearchParams stable en pratique)
 
   const canSubmit = useMemo(() => {
+    if (!supabase) return false;
     if (!hasRecoverySession) return false;
     if (pwd.length < 8) return false;
     if (pwd !== pwd2) return false;
     return true;
-  }, [hasRecoverySession, pwd, pwd2]);
+  }, [supabase, hasRecoverySession, pwd, pwd2]);
 
   const onSubmit = async () => {
+    if (!supabase) return;
     if (!canSubmit) return;
 
     setLoading(true);
@@ -307,7 +326,6 @@ export default function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password: pwd });
       if (error) throw error;
 
-      // Optionnel: on se déconnecte côté web, pour éviter de laisser une session web ouverte
       await supabase.auth.signOut();
 
       setMsg({
