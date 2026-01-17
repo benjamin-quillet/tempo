@@ -199,44 +199,176 @@ function IdeaCard({
   );
 }
 
+/* ----------------------------- Punchy Metrics ------------------------------ */
+type Tone = "mint" | "blue" | "ink";
+
+function BigArrow({
+  tone = "mint",
+  variant = "mint",
+}: {
+  tone?: Tone;
+  variant?: "mint" | "blue" | "ink";
+}) {
+  const wrap =
+    tone === "mint"
+      ? "border-[rgba(131,199,177,.30)] bg-[linear-gradient(135deg,rgba(131,199,177,.20),rgba(255,255,255,.06))]"
+      : tone === "blue"
+      ? "border-[rgba(62,129,190,.30)] bg-[linear-gradient(135deg,rgba(62,129,190,.20),rgba(255,255,255,.06))]"
+      : "border-white/14 bg-white/8";
+
+  const glow =
+    tone === "mint"
+      ? "bg-[radial-gradient(circle_at_center,rgba(131,199,177,.40),transparent_60%)]"
+      : tone === "blue"
+      ? "bg-[radial-gradient(circle_at_center,rgba(62,129,190,.38),transparent_60%)]"
+      : "bg-[radial-gradient(circle_at_center,rgba(255,255,255,.26),transparent_60%)]";
+
+  // ✅ FIX: ink = clair + drop-shadow (visible sur glass)
+  const arrowColor =
+    variant === "mint"
+      ? "text-[rgba(131,199,177,.98)]"
+      : variant === "blue"
+      ? "text-[rgba(62,129,190,.98)]"
+      : "text-white/90";
+
+  return (
+    <span
+      className={[
+        "relative inline-flex items-center justify-center",
+        "h-12 w-12 rounded-2xl border",
+        "shadow-[0_18px_60px_rgba(0,0,0,.16)] backdrop-blur",
+        wrap,
+      ].join(" ")}
+      aria-hidden
+    >
+      <span
+        className={[
+          "text-[26px] font-black leading-none",
+          "drop-shadow-[0_12px_30px_rgba(0,0,0,.28)]",
+          arrowColor,
+        ].join(" ")}
+      >
+        ↗
+      </span>
+      <span
+        className={[
+          "pointer-events-none absolute -inset-6 rounded-[26px] blur-2xl opacity-45",
+          glow,
+        ].join(" ")}
+      />
+    </span>
+  );
+}
+
+function MetricCard({
+  title,
+  desc,
+  tone = "mint",
+  arrowVariant = "ink",
+  className = "",
+}: {
+  title: string;
+  desc: string;
+  tone?: Tone;
+  arrowVariant?: "mint" | "blue" | "ink";
+  className?: string;
+}) {
+  const border =
+    tone === "mint"
+      ? "border-[rgba(131,199,177,.32)]"
+      : tone === "blue"
+      ? "border-[rgba(62,129,190,.30)]"
+      : "border-white/14";
+
+  const bar =
+    tone === "mint"
+      ? "bg-[linear-gradient(180deg,rgba(131,199,177,.95),rgba(131,199,177,.25))]"
+      : tone === "blue"
+      ? "bg-[linear-gradient(180deg,rgba(62,129,190,.95),rgba(62,129,190,.25))]"
+      : "bg-[linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.12))]";
+
+  const wash =
+    tone === "mint"
+      ? "bg-[radial-gradient(circle_at_18%_10%,rgba(131,199,177,.28),transparent_56%)]"
+      : tone === "blue"
+      ? "bg-[radial-gradient(circle_at_18%_10%,rgba(62,129,190,.26),transparent_56%)]"
+      : "bg-[radial-gradient(circle_at_18%_10%,rgba(255,255,255,.14),transparent_56%)]";
+
+  return (
+    <div
+      className={[
+        "group relative overflow-hidden rounded-[24px] border",
+        border,
+        "bg-[linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.06))]",
+        "shadow-[0_20px_64px_rgba(0,0,0,.14)] backdrop-blur",
+        "transition hover:-translate-y-1 hover:shadow-[0_28px_90px_rgba(0,0,0,.20)]",
+        className,
+      ].join(" ")}
+    >
+      <div className={["absolute left-0 top-0 h-full w-[3px]", bar].join(" ")} />
+      <div className={["pointer-events-none absolute inset-0 opacity-80", wash].join(" ")} />
+      <div className="pointer-events-none absolute -right-20 -bottom-20 h-60 w-60 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,.10),transparent_60%)] blur-2xl" />
+
+      <div className="relative flex items-start justify-between gap-5 p-5">
+        <div className="min-w-0">
+          <div className="text-[15px] font-extrabold tracking-tight text-white">
+            {title}
+          </div>
+          <div className="mt-2 text-sm leading-relaxed text-white/74">{desc}</div>
+        </div>
+
+        <div className="shrink-0">
+          <BigArrow tone={tone === "ink" ? "ink" : tone} variant={arrowVariant} />
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100 bg-[radial-gradient(900px_240px_at_20%_0%,rgba(255,255,255,.22),transparent_55%)]" />
+    </div>
+  );
+}
+
 /* ------------------------------ Algo / Tech panel --------------------------- */
 function TechPanel() {
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-white/12 bg-white/7 p-7 shadow-[0_24px_80px_rgba(0,0,0,.16)] backdrop-blur">
+    <div className="relative overflow-hidden rounded-[28px] border border-white/12 bg-white/7 p-6 shadow-[0_22px_70px_rgba(0,0,0,.14)] backdrop-blur">
       <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.22),transparent_62%)] blur-2xl" />
       <div className="pointer-events-none absolute -left-24 -bottom-24 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.22),transparent_62%)] blur-2xl" />
       <div className="pointer-events-none absolute left-[22%] top-[-70px] h-[220px] w-[220px] rotate-12 rounded-[44px] bg-[linear-gradient(135deg,rgba(131,199,177,.18),rgba(255,255,255,.06))] blur-xl" />
 
       <div className="flex flex-col gap-2">
         <div className="text-[11px] font-semibold tracking-widest text-white/60">
-          ALGORITHME DE POINTE
+          MATCHING SPORTIF
         </div>
-        <div className="text-2xl font-extrabold text-white">
-          Moins de swipe, plus de séances.
+
+        <div className="text-[22px] font-extrabold leading-tight text-white">
+          Un algorithme pensé pour l’entraînement.
         </div>
+
         <p className="mt-1 max-w-3xl text-sm leading-relaxed text-white/75">
-          Nos ingénieurs ont élaboré un algorithme qui te permet de rencontrer les
-          meilleurs profils — en tenant compte de ton sport, ton niveau, tes
-          objectifs, et de vos centres d’intérêts communs.
+          Sport, rythme et objectifs : Tempo propose des profils cohérents — sans te
+          faire perdre du temps.
         </p>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <div className="rounded-2xl border border-white/12 bg-white/7 p-4">
-            <div className="text-xs text-white/55">Swipes inutiles</div>
-            <div className="mt-1 text-lg font-extrabold text-white">↘ x3</div>
-          </div>
-          <div className="rounded-2xl border border-white/12 bg-white/7 p-4">
-            <div className="text-xs text-white/55">Temps pour trouver un binôme</div>
-            <div className="mt-1 text-lg font-extrabold text-white">↘ 3 jours</div>
-          </div>
-          <div className="rounded-2xl border border-white/12 bg-white/7 p-4">
-            <div className="text-xs text-white/55">Taux de réponse</div>
-            <div className="mt-1 text-lg font-extrabold text-white">↗ 64%</div>
-          </div>
-          <div className="rounded-2xl border border-white/12 bg-white/7 p-4">
-            <div className="text-xs text-white/55">Séances planifiées</div>
-            <div className="mt-1 text-lg font-extrabold text-white">↗ +38%</div>
-          </div>
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <MetricCard
+            title="Profils pertinents"
+            desc="Des suggestions plus pertinentes"
+            tone="mint"
+            arrowVariant="blue"
+          />
+          <MetricCard
+            title="Comptabilité sport & rythme"
+            desc="Des profils adaptés à ton rythme"
+            tone="mint"
+            arrowVariant="ink"
+          />
+          <MetricCard
+            title="Moins de temps à chercher ton sparring partner"
+            desc="Rencontre des passionnés comme toi"
+            tone="blue"
+            arrowVariant="mint"
+            className="md:col-span-2"
+          />
         </div>
       </div>
     </div>
@@ -256,22 +388,34 @@ function ReviewPill({
   return (
     <div
       className={[
-        "mx-2 inline-flex w-[340px] shrink-0 flex-col justify-between rounded-3xl border border-black/10 p-6 backdrop-blur",
-        "shadow-[0_18px_60px_rgba(0,0,0,.12)]",
-        "bg-white/80",
+        "mx-2 inline-flex w-[340px] shrink-0 flex-col justify-between",
+        "rounded-[28px] border border-white/12 bg-white/7 p-6 backdrop-blur",
+        "shadow-[0_22px_70px_rgba(0,0,0,.18)]",
+        "transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/9",
       ].join(" ")}
     >
-      <div>
+      <div className="pointer-events-none absolute -right-24 -top-24 h-60 w-60 rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.20),transparent_62%)] blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 -bottom-24 h-60 w-60 rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.20),transparent_62%)] blur-3xl" />
+
+      <div className="relative">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="text-sm font-bold text-[#071218]">{name}</div>
-            <div className="mt-1 text-xs text-black/55">{meta}</div>
+          <div className="min-w-0">
+            <div className="text-sm font-extrabold text-white">{name}</div>
+            <div className="mt-1 text-xs text-white/60">{meta}</div>
           </div>
-          <div className="text-xs text-black/40">Avis</div>
+
+          <div className="shrink-0 rounded-2xl border border-white/12 bg-white/7 px-3 py-2 text-xs font-extrabold text-white/80">
+            Avis
+          </div>
         </div>
-        <div className="mt-4 text-sm leading-relaxed text-black/70">“{quote}”</div>
+
+        <div className="mt-4 text-sm leading-relaxed text-white/75">“{quote}”</div>
       </div>
-      <div className="mt-4 text-xs text-black/45">↗</div>
+
+      <div className="relative mt-4 inline-flex items-center justify-between text-xs text-white/55">
+        <span>Tempo</span>
+        <span className="text-white/75 drop-shadow-[0_12px_30px_rgba(0,0,0,.28)]">↗</span>
+      </div>
     </div>
   );
 }
@@ -317,18 +461,14 @@ function ReviewsMarquee() {
 
   return (
     <div className="mt-8">
-      {/* ✅ bandeau BLANC (comme tu veux) + dynamique avec formes */}
-      <div className="relative overflow-hidden rounded-[34px] border border-black/10 bg-white/70 p-4 shadow-[0_26px_90px_rgba(0,0,0,.12)] backdrop-blur">
-        {/* formes colorées tempo */}
-        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.40),transparent_62%)] blur-3xl" />
-        <div className="pointer-events-none absolute -right-28 -bottom-28 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.38),transparent_62%)] blur-3xl" />
-        <div className="pointer-events-none absolute left-[35%] top-[-70px] h-[240px] w-[240px] rotate-12 rounded-[52px] bg-[linear-gradient(135deg,rgba(62,129,190,.18),rgba(131,199,177,.18))] blur-2xl" />
+      <div className="relative overflow-hidden rounded-[34px] border border-white/12 bg-white/6 p-4 shadow-[0_26px_90px_rgba(0,0,0,.18)] backdrop-blur">
+        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.28),transparent_62%)] blur-3xl" />
+        <div className="pointer-events-none absolute -right-28 -bottom-28 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.26),transparent_62%)] blur-3xl" />
+        <div className="pointer-events-none absolute left-[35%] top-[-70px] h-[240px] w-[240px] rotate-12 rounded-[52px] bg-[linear-gradient(135deg,rgba(62,129,190,.14),rgba(131,199,177,.14))] blur-2xl" />
 
-        {/* zone interne */}
-        <div className="relative overflow-hidden rounded-[26px] border border-black/10 bg-white/55">
-          {/* fades latéraux (blanc) */}
-          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-28 bg-[linear-gradient(to_right,rgba(255,255,255,.95),transparent)]" />
-          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-28 bg-[linear-gradient(to_left,rgba(255,255,255,.95),transparent)]" />
+        <div className="relative overflow-hidden rounded-[26px] border border-white/12 bg-white/5">
+          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-28 bg-[linear-gradient(to_right,rgba(7,18,24,.65),transparent)]" />
+          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-28 bg-[linear-gradient(to_left,rgba(7,18,24,.65),transparent)]" />
 
           <div
             className={[
@@ -381,9 +521,7 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       const el = document.getElementById(targetId);
       if (!el) return;
 
-      // ✅ IMPORTANT: pour éviter que le sticky header masque le début de section
       const top = el.offsetTop - headerH;
-
       scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     };
 
@@ -415,16 +553,18 @@ export default function Home() {
   const APP_STORE_URL = "#";
   const PLAY_STORE_URL = "#";
 
+  const GOOGLE_FORM_URL =
+    "https://docs.google.com/forms/d/e/1FAIpQLSdbD-0gYEpuSPiReYmy4j7BvSonc79vUeElfJwsYlAErfENGQ/viewform?usp=dialog";
+
   const INSTAGRAM_TEMPO_URL = "https://instagram.com/tempo";
   const INSTAGRAM_BEN_URL = "https://instagram.com/ben.ontrack";
-  const CONTACT_EMAIL = "contact@tempo.app";
+  const CONTACT_EMAIL = "contact@jointhetempo.app";
 
   const HEADER_H = 72;
 
   const sections = ["top", "ideas", "reviews", "team", "footer"];
   const scrollerRef = useSnapScroll(sections, HEADER_H);
 
-  // ✅ helper: scroll interne (dans le scroller), avec offset header
   const scrollToId = (id: string) => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
@@ -448,7 +588,6 @@ export default function Home() {
       {/* Header sticky */}
       <header className="sticky top-0 z-50 border-b border-white/5 bg-tempo-ink/70 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          {/* ✅ on évite le hash #top (qui joue avec l'URL et peut créer des comportements bizarres dans un scroller interne) */}
           <button
             type="button"
             onClick={() => scrollToId("top")}
@@ -502,7 +641,6 @@ export default function Home() {
               @tempo ↗
             </a>
 
-            {/* ✅ FIX bug: on n'utilise plus href="#download" -> on scroll en interne avec offset header */}
             <button
               type="button"
               onClick={() => scrollToId("download")}
@@ -524,10 +662,10 @@ export default function Home() {
             <div>
               <Reveal>
                 <h1 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
-                  <span className="block">Trouve des partenaires</span>
+                  <span className="block">Trouve des sportifs</span>
 
                   <span className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
-                    <span className="leading-none">qui matchent</span>
+                    <span className="leading-none">qui suivent</span>
                     <span className="leading-none text-white/90">ton</span>
 
                     <span className="relative inline-flex items-center leading-none">
@@ -548,21 +686,22 @@ export default function Home() {
 
               <Reveal delayMs={130}>
                 <p className="mt-7 max-w-xl text-base leading-relaxed text-white/78">
-                  TEMPO te connecte aux{" "}
-                  <span className="font-semibold text-white">bons partenaires</span>{" "}
-                  en fonction de ton{" "}
-                  <span className="font-semibold text-white">sport</span>,{" "}
-                  <span className="font-semibold text-white">niveau</span>,{" "}
-                  <span className="font-semibold text-white">objectifs</span>,{" "}
+                  Tempo repose sur un{" "}
                   <span className="font-semibold text-white">
-                    centres d’intérêts
+                    algorithme de matching avancé
                   </span>{" "}
-                  et <span className="font-semibold text-white">vibe</span>.
+                  conçu pour le sport : il combine ta{" "}
+                  <span className="font-semibold text-white">pratique</span>, ton{" "}
+                  <span className="font-semibold text-white">rythme</span>, tes{" "}
+                  <span className="font-semibold text-white">objectifs</span> et tes{" "}
+                  <span className="font-semibold text-white">
+                    habitudes d’entraînement
+                  </span>{" "}
+                  pour proposer des rencontres réellement pertinentes.
                 </p>
               </Reveal>
 
               <Reveal delayMs={220}>
-                {/* ✅ FIX: scroll-margin-top pour tous les navigateurs + fallback */}
                 <div
                   id="download"
                   className="mt-8 grid scroll-mt-[84px] grid-cols-1 gap-3 sm:grid-cols-2"
@@ -572,14 +711,45 @@ export default function Home() {
                 </div>
               </Reveal>
 
+              {/* ✅ AJOUT Google Form (sous les 2 boutons, au-dessus du matching) */}
+              <Reveal delayMs={265}>
+                <a
+                  href={GOOGLE_FORM_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={[
+                    "mt-4 inline-flex w-full items-center justify-between gap-4",
+                    "rounded-2xl border border-white/12 bg-white/7 px-5 py-4",
+                    "shadow-[0_18px_60px_rgba(0,0,0,.18)] backdrop-blur",
+                    "transition hover:-translate-y-0.5 hover:bg-white/9 active:translate-y-0",
+                    "focus:outline-none focus:ring-2 focus:ring-white/30",
+                  ].join(" ")}
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/60">
+                      Début de Tempo
+                    </span>
+                    <span className="mt-1 block text-sm font-extrabold text-white">
+                      Donne ton avis (1 min) — on construit l’app avec toi
+                    </span>
+                    <span className="mt-1 block text-sm text-white/70">
+                      Aide-nous à comprendre tes attentes.
+                    </span>
+                  </span>
+
+                  <span className="shrink-0 rounded-2xl border border-white/12 bg-white/7 px-3 py-2 text-sm font-extrabold text-white/90">
+                    ↗
+                  </span>
+                </a>
+              </Reveal>
+
               <Reveal delayMs={300}>
                 <div className="mt-7 rounded-3xl border border-white/10 bg-white/6 p-5 shadow-[0_18px_60px_rgba(0,0,0,.18)] backdrop-blur">
                   <div className="text-sm font-extrabold text-white">
-                    Moins de swipe. Plus d’entraînement.
+                    Le matching prend en compte ton sport — et ta manière de t’entraîner.
                   </div>
                   <div className="mt-2 text-sm text-white/70">
-                    Nos ingénieurs ont élaboré un algorithme qui te permet de rencontrer
-                    les meilleurs profils.
+                    Rythme, objectifs, habitudes : l’app propose des profils cohérents.
                   </div>
                 </div>
               </Reveal>
@@ -606,15 +776,15 @@ export default function Home() {
 
       {/* -------------------------------- IDEAS (light) ------------------------------ */}
       <SnapSection id="ideas" variant="light">
-        <div className="mx-auto flex min-h-[calc(100svh-72px)] max-w-6xl flex-col justify-center px-5 py-12">
+        <div className="mx-auto flex min-h-[calc(100svh-72px)] max-w-6xl flex-col px-5 pb-12 pt-16 md:pt-20">
           <Reveal>
             <div className="max-w-3xl">
               <h2 className="text-3xl font-extrabold text-white">
-                Une app conçue pour matcher juste.
+                Une app construite pour la compatibilité sportive.
               </h2>
               <p className="mt-2 text-sm text-white/80">
-                Un algorithme de pointe pour te connecter aux bons partenaires — et passer
-                rapidement à la séance.
+                Le matching s’appuie sur ta pratique et ton rythme pour proposer des
+                rencontres qui ont du sens.
               </p>
             </div>
           </Reveal>
@@ -623,16 +793,16 @@ export default function Home() {
             <Reveal>
               <IdeaCard
                 index="01"
-                title="Rencontre le bon ou la bonne partenaire sportif."
-                desc="Des recommandations précises selon ton sport, ton niveau et tes objectifs — pour éviter le swipe inutile."
+                title="Des recommandations vraiment sport."
+                desc="Course, HYROX, cross-training… Tempo comprend ton contexte (niveau, objectifs, habitudes) pour te montrer les bons profils."
               />
             </Reveal>
 
             <Reveal delayMs={90}>
               <IdeaCard
                 index="02"
-                title="Centres d’intérêts communs."
-                desc="Sports + objectifs + passions : tu connectes avec des profils compatibles, pas juste “dispo”."
+                title="Ce qui vous rapproche, au-delà du sport."
+                desc="Centres d’intérêt, routines, préférences : de quoi démarrer une discussion naturelle."
               />
             </Reveal>
 
@@ -646,12 +816,12 @@ export default function Home() {
           </div>
 
           <Reveal delayMs={220}>
-            <div className="mt-8">
+            <div className="mt-7">
               <TechPanel />
             </div>
           </Reveal>
 
-          <div className="mt-8 text-sm text-white/75">
+          <div className="mt-7 text-sm text-white/75">
             <button
               type="button"
               onClick={() => scrollToId("reviews")}
@@ -667,12 +837,9 @@ export default function Home() {
       <SnapSection id="reviews" variant="light">
         <div className="mx-auto flex min-h-[calc(100svh-72px)] max-w-6xl flex-col justify-center px-5 py-12">
           <Reveal>
-            <h2 className="text-3xl font-extrabold text-white">
-              Ils ont trouvé leur tempo
-            </h2>
+            <h2 className="text-3xl font-extrabold text-white">Ils ont trouvé leur tempo</h2>
             <p className="mt-2 max-w-2xl text-sm text-white/80">
-              Des retours simples : des profils cohérents, des discussions utiles, et des
-              séances qui se font.
+              Des avis qui résument Tempo :
             </p>
           </Reveal>
 
@@ -734,10 +901,10 @@ export default function Home() {
                   </div>
 
                   <p className="mt-6 text-sm leading-relaxed text-white/75">
-                    “Je passais tellement de temps à m’entraîner que je n’avais plus vraiment
-                    l’occasion de rencontrer du monde. Je voulais une app qui me fasse gagner
-                    du temps, et qui me connecte à des partenaires pertinents — niveau,
-                    objectifs, et passions.”
+                    “Je passais énormément de temps à m’entraîner et je croisais rarement
+                    des personnes avec le même rythme. Tempo est né de cette idée : un
+                    matching qui comprend réellement ta pratique et ta manière de
+                    t’entraîner.”
                   </p>
                 </div>
 
@@ -746,36 +913,38 @@ export default function Home() {
                   <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-white/5">
                     <div className="p-7">
                       <div className="text-[11px] font-semibold tracking-widest text-white/55">
-                        BUILDING TEMPO
+                        MATCHING AVANCÉ
                       </div>
 
                       <div className="mt-3 text-2xl font-extrabold text-white">
-                        Un matching qui fonctionne vraiment.
+                        La compatibilité avant tout.
                       </div>
 
                       <div className="mt-3 text-sm text-white/70">
-                        L’objectif : t’aider à trouver rapidement un binôme compatible.
+                        Tempo combine sport, rythme et objectifs pour proposer des profils
+                        cohérents — sans te faire perdre du temps.
                       </div>
 
-                      <div className="mt-7 grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border border-white/12 bg-white/7 p-4">
-                          <div className="text-xs text-white/55">
-                            Temps pour trouver un binôme
-                          </div>
-                          <div className="mt-1 text-lg font-extrabold text-white">↘ 3 jours</div>
-                        </div>
-                        <div className="rounded-2xl border border-white/12 bg-white/7 p-4">
-                          <div className="text-xs text-white/55">Swipes inutiles</div>
-                          <div className="mt-1 text-lg font-extrabold text-white">↘ x3</div>
-                        </div>
-                        <div className="rounded-2xl border border-white/12 bg-white/7 p-4">
-                          <div className="text-xs text-white/55">Taux de réponse en DM</div>
-                          <div className="mt-1 text-lg font-extrabold text-white">↗ 64%</div>
-                        </div>
-                        <div className="rounded-2xl border border-white/12 bg-white/7 p-4">
-                          <div className="text-xs text-white/55">Séances créées / semaine</div>
-                          <div className="mt-1 text-lg font-extrabold text-white">↗ +38%</div>
-                        </div>
+                      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <MetricCard
+                          title="Profils pertinents"
+                          desc="Des suggestions plus pertinentes"
+                          tone="mint"
+                          arrowVariant="blue"
+                        />
+                        <MetricCard
+                          title="Comptabilité sport & rythme"
+                          desc="Des profils adaptés à ton rythme"
+                          tone="mint"
+                          arrowVariant="ink"
+                        />
+                        <MetricCard
+                          title="Moins de temps à chercher ton sparring partner"
+                          desc="Rencontre des passionnés comme toi"
+                          tone="blue"
+                          arrowVariant="mint"
+                          className="md:col-span-2"
+                        />
                       </div>
 
                       <div className="mt-6 text-xs text-white/55" />
