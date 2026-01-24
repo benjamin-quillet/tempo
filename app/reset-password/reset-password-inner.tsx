@@ -414,7 +414,7 @@ export default function ResetPasswordPage() {
                             label="MOT DE PASSE"
                             value={pwd}
                             onChange={setPwd}
-                            placeholder="8 caractères minimum"
+                            placeholder="6 caractères minimum"
                             type="password"
                             autoComplete="new-password"
                           />
@@ -437,8 +437,8 @@ export default function ResetPasswordPage() {
                               Conseils rapides
                             </div>
                             <ul className="mt-2 list-disc space-y-1 pl-5">
-                              <li>8+ caractères (idéalement 12+)</li>
-                              <li>Majuscules + minuscules + chiffres</li>
+                              <li>6+ caractères</li>
+                              <li>Majuscules + minuscules + chiffres + caractère spécial</li>
                               <li>Évite les mots de passe réutilisés</li>
                             </ul>
                           </div>
