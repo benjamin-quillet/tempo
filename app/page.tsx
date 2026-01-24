@@ -327,10 +327,10 @@ export default function Home() {
   const APP2 = "/appli2.png";
 
   // ✅ tes sports dans /public/sports
-  const S_COURSE2 = "/sports/course2.JPG";
-  const S_COURSE1 = "/sports/course1.JPG";
-  const S_HYROX = "/sports/hyrox1.JPG";
-  const S_ESCALADE = "/sports/escalade2.JPG";
+  const S_COURSE2 = "/sports/course2.jpg";
+  const S_COURSE1 = "/sports/course1.jpg";
+  const S_HYROX = "/sports/hyrox1.jpg";
+  const S_ESCALADE = "/sports/escalade2.jpg";
   const S_MUSCU = "/sports/muscu1.jpg";
   const S_VELO = "/sports/velo1.jpg";
   const S_TENNIS = "/sports/tennis1.jpg";
