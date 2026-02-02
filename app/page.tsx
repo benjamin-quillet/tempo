@@ -68,8 +68,8 @@ function SnapSection({
     <section
       id={id}
       className={[
-        // ✅ IMPORTANT: snap-stop ONLY desktop, sinon iOS “accroche” trop et lutte avec le scroll naturel
-        "relative isolate snap-start md:[scroll-snap-stop:always]",
+        // ✅ on force le snap “stop always” pour éviter les positions intermédiaires
+        "relative isolate snap-start [scroll-snap-stop:always]",
         "w-full overflow-hidden",
         variant === "dark" ? dark : light,
         className,
@@ -216,10 +216,11 @@ function GoogleRating() {
 
 /* ------------------------------ Snap Scrolling ------------------------------ */
 /**
- * ✅ Fix principal iOS:
- * - Sur mobile (pointer:coarse), on NE FORCE PAS le paging en JS.
- *   => sinon iOS “lutte” (momentum + scroll-snap + notre resnap) => ça bloque / remonte / nécessite plusieurs swipes.
- * - Sur desktop (pointer:fine), on garde le paging strict (wheel + resnap) car c’est fluide.
+ * ✅ Version “NO VIDES” (strict paging):
+ * - wheel / trackpad => on force section suivante/précédente
+ * - swipe mobile => idem
+ * - au repos => on re-snap TOUJOURS à la section la plus proche (aucune exception)
+ * => tu ne peux plus rester entre deux sections.
  */
 function useSnapScroll(sectionIds: string[], headerH: number) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -229,13 +230,13 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
     const scroller = scrollerRef.current;
     if (!scroller) return;
 
-    const isCoarse =
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(pointer: coarse)").matches;
-
     const clampIdx = (idx: number) =>
       Math.max(0, Math.min(sectionIds.length - 1, idx));
+
+    const getTargets = () =>
+      sectionIds
+        .map((id) => document.getElementById(id) as HTMLElement | null)
+        .filter(Boolean) as HTMLElement[];
 
     const scrollToIndex = (idx: number) => {
       const clamped = clampIdx(idx);
@@ -248,10 +249,7 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
 
     const getNearestIndex = () => {
       const y = scroller.scrollTop;
-      const targets = sectionIds
-        .map((id) => document.getElementById(id) as HTMLElement | null)
-        .filter(Boolean) as HTMLElement[];
-
+      const targets = getTargets();
       if (!targets.length) return 0;
 
       let bestIdx = 0;
@@ -268,31 +266,6 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       return clampIdx(bestIdx);
     };
 
-    // ========== MOBILE ==========
-    // On laisse iOS gérer le scroll + snap CSS (proximity) sans JS agressif.
-    // (On conserve juste un “cleanup” très léger après resize/orientation)
-    if (isCoarse) {
-      let resizeT = 0;
-      const onResize = () => {
-        window.clearTimeout(resizeT);
-        resizeT = window.setTimeout(() => {
-          // resnap doux après rotation (sinon offsets changent)
-          scroller.scrollTo({
-            top: Math.max(0, (document.getElementById(sectionIds[getNearestIndex()])?.offsetTop ?? 0) - headerH),
-            behavior: "auto",
-          });
-        }, 120);
-      };
-
-      window.addEventListener("resize", onResize);
-
-      return () => {
-        window.clearTimeout(resizeT);
-        window.removeEventListener("resize", onResize);
-      };
-    }
-
-    // ========== DESKTOP (paging strict) ==========
     const forceNearest = () => {
       if (lockRef.current) return;
       lockRef.current = true;
@@ -302,7 +275,7 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       }, 520);
     };
 
-    // Trackpad accumulation
+    // Trackpad: accumulation (sinon ça déclenche trop vite ou pas du tout selon device)
     let acc = 0;
     let accT = 0;
 
@@ -311,7 +284,9 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
         e.preventDefault();
         return;
       }
-      if ((e as any).ctrlKey) return; // pinch zoom
+
+      // si l’utilisateur est en train de pincer/zoom ctrl+wheel, on ne casse pas
+      if ((e as any).ctrlKey) return;
 
       const now = Date.now();
       if (now - accT > 140) acc = 0;
@@ -319,11 +294,11 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
 
       acc += e.deltaY;
 
-      // un peu plus “sensible” mais stable
-      const TH = 32;
+      // seuil un peu haut pour éviter les micro scrolls
+      const TH = 40;
 
       if (Math.abs(acc) < TH) {
-        e.preventDefault();
+        e.preventDefault(); // ✅ empêche de se poser “entre deux”
         return;
       }
 
@@ -339,26 +314,72 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       }, 650);
     };
 
-    // Snap au repos (desktop seulement)
+    // Mobile swipe
+    let touchStartY = 0;
+    let touchStartX = 0;
+    let touchT = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (!e.touches?.length) return;
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+      touchT = Date.now();
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (lockRef.current) return;
+      if (!e.changedTouches?.length) return;
+
+      const dt = Date.now() - touchT;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+
+      // ignore swipe horizontal
+      if (Math.abs(dx) > Math.abs(dy)) return;
+
+      // swipe court/rapide
+      if (dt > 700) return;
+
+      const TH = 44;
+      if (Math.abs(dy) < TH) {
+        // ✅ si petit swipe => on resnap pour éviter les “entre-deux”
+        forceNearest();
+        return;
+      }
+
+      const dir = dy < 0 ? 1 : -1;
+      const idx = getNearestIndex();
+      lockRef.current = true;
+      scrollToIndex(idx + dir);
+      window.setTimeout(() => {
+        lockRef.current = false;
+      }, 650);
+    };
+
+    // Snap au repos (TOUJOURS)
     let idleTimer = 0;
     const onScroll = () => {
       window.clearTimeout(idleTimer);
       idleTimer = window.setTimeout(() => {
         forceNearest();
-      }, 160);
+      }, 110);
     };
 
     const onResize = () => {
+      // après resize, on resnap (sinon offsets changent)
       window.clearTimeout(idleTimer);
       idleTimer = window.setTimeout(() => {
         forceNearest();
-      }, 80);
+      }, 60);
     };
 
     scroller.addEventListener("wheel", onWheel, { passive: false });
     scroller.addEventListener("scroll", onScroll, { passive: true });
+    scroller.addEventListener("touchstart", onTouchStart, { passive: true });
+    scroller.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("resize", onResize);
 
+    // première mise au propre
     const t = window.setTimeout(() => {
       forceNearest();
     }, 220);
@@ -368,6 +389,8 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       window.clearTimeout(idleTimer);
       scroller.removeEventListener("wheel", onWheel as any);
       scroller.removeEventListener("scroll", onScroll as any);
+      scroller.removeEventListener("touchstart", onTouchStart as any);
+      scroller.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("resize", onResize);
     };
   }, [sectionIds, headerH]);
@@ -551,18 +574,14 @@ export default function Home() {
       className={[
         "snap-root",
         "h-svh overflow-y-auto overflow-x-hidden",
-        // ✅ mobile: snap PROXIMITY (pas mandatory) => plus de “blocage/remontée”
-        // ✅ desktop: snap mandatory (scroll paging premium)
-        "snap-y snap-proximity md:snap-mandatory",
+        "scroll-smooth",
+        // ✅ snap TOUJOURS activé (sinon tu peux atterrir “entre deux”)
+        "snap-y snap-mandatory",
         "text-white",
         "overscroll-y-contain",
       ].join(" ")}
-      style={{
-        scrollPaddingTop: HEADER_H,
-        // ✅ iOS momentum + overflow container
-        WebkitOverflowScrolling: "touch",
-        // (pas de scroll-behavior global ici : on garde le smooth uniquement sur les scrollTo)
-      }}
+      // ✅ très important: compense le header pour le snap
+      style={{ scrollPaddingTop: HEADER_H }}
     >
       {/* Header sticky */}
       <header className="sticky top-0 z-50 border-b border-white/5 bg-tempo-ink/70 backdrop-blur">
@@ -645,7 +664,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* -------------------------------- TRIPTYQUE HERO (TOP) ------------------------------ */}
+      {/* -------------------------------- TRIPTYQUE HERO (TOP) — iOS OK ------------------------------ */}
       <SnapSection
         id="triphero"
         variant="dark"
@@ -742,16 +761,16 @@ export default function Home() {
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.12),rgba(7,18,24,.02),rgba(7,18,24,.55))]" />
               </div>
 
-              {/* ✅ CTA + Notes remontés sur téléphone */}
-              <div className="absolute inset-x-0 bottom-16 sm:bottom-24">
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.78))]" />
+              {/* ✅ CTA + Notes collés au triptyque (overlay bas) */}
+              <div className="absolute inset-x-0 bottom-10 sm:bottom-24">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.75))]" />
                 <div className="relative px-5 pb-6">
                   <div className="mx-auto max-w-6xl">
                     <div
                       id="download"
                       className={[
                         "grid scroll-mt-[84px] grid-cols-1 gap-3 sm:grid-cols-2",
-                        // ✅ mobile: remonte davantage
+                        // ✅ mobile: rapprochement des boutons (superposition sur le triptyque)
                         "translate-y-[-36px] sm:translate-y-0",
                       ].join(" ")}
                     >
