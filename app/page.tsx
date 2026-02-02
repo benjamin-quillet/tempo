@@ -154,7 +154,7 @@ function DownloadButton({
             Télécharger
           </span>
           <span className="text-sm font-extrabold">
-            {isApp ? "App Store" : "Google Play"}
+            {isApp ? "App Store's?" : "Google Play"}
           </span>
         </span>
       </span>
@@ -214,12 +214,6 @@ function GoogleRating() {
 }
 
 /* ------------------------------ Snap Scrolling ------------------------------ */
-/**
- * ✅ Version “NO VIDES” (strict paging):
- * - wheel / trackpad => on force section suivante/précédente
- * - swipe mobile => idem
- * - au repos => on re-snap TOUJOURS à la section la plus proche
- */
 function useSnapScroll(sectionIds: string[], headerH: number) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const lockRef = useRef(false);
@@ -433,14 +427,17 @@ function getNearestSectionIndex(
   return Math.max(0, Math.min(ids.length - 1, bestIdx));
 }
 
+/**
+ * ✅ NEW SectionCaption:
+ * - kicker supprimé
+ * - title + subtitle dans un "glass" translucide léger (lisible sur image)
+ */
 function SectionCaption({
-  kicker,
   title,
   subtitle,
   position = "auto",
-  liftClass = "", // ✅ permet de monter/descendre facilement
+  liftClass = "",
 }: {
-  kicker: string;
   title: string;
   subtitle: React.ReactNode;
   position?: "auto" | "top";
@@ -453,29 +450,36 @@ function SectionCaption({
         position === "top"
           ? "top-[calc(env(safe-area-inset-top)+72px)] sm:top-[calc(env(safe-area-inset-top)+88px)]"
           : "top-[calc(env(safe-area-inset-top)+72px)] sm:top-auto sm:bottom-16",
-        // ✅ le vrai “move up”
         "transform-gpu",
         liftClass,
       ].join(" ")}
     >
       <div className="relative max-w-2xl">
-        <div className="inline-flex rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/95 backdrop-blur">
-          {kicker}
-        </div>
+        {/* ✅ glass panel */}
+        <div
+          className={[
+            "rounded-3xl border border-white/14 bg-white/10 backdrop-blur",
+            "px-4 py-4 sm:px-5 sm:py-5",
+            "shadow-[0_22px_70px_rgba(0,0,0,.22)]",
+          ].join(" ")}
+        >
+          {/* micro highlight subtil (donne du contraste sans 'gros bloc') */}
+          <div className="pointer-events-none absolute inset-[1px] rounded-3xl bg-[linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0))] opacity-60" />
 
-        <div className="mt-3 text-[22px] font-extrabold leading-tight text-white sm:text-[30px] md:text-[34px]">
-          {title}
-        </div>
+          <div className="relative">
+            <div className="text-[22px] font-extrabold leading-tight text-white sm:text-[30px] md:text-[34px]">
+              {title}
+            </div>
 
-        <div className="mt-2 text-sm leading-relaxed text-white/85 sm:text-sm">
-          {subtitle}
+            <div className="mt-2 text-sm leading-relaxed text-white/90 sm:text-sm">
+              {subtitle}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-
 
 /* ---------------------------------- Page ---------------------------------- */
 export default function Home() {
@@ -542,7 +546,6 @@ export default function Home() {
     };
   }, [scrollerRef]);
 
-  // ✅ index courant (pour les boutons “Suivant/Précédent”)
   const currentIdx = useMemo(() => {
     if (typeof window === "undefined") return 0;
     return getNearestSectionIndex(scrollerRef.current, sections, HEADER_H);
@@ -780,11 +783,11 @@ export default function Home() {
           "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]",
         ].join(" ")}
       >
-              {/* ✅ background photo (course2) comme le footer */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
-        <Image src={S_COURSE2} alt="" fill className="object-cover" priority />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.72),rgba(7,18,24,.92))]" />
-      </div>
+        {/* ✅ background photo (course2) comme le footer */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
+          <Image src={S_COURSE2} alt="" fill className="object-cover" priority />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.72),rgba(7,18,24,.92))]" />
+        </div>
 
         <div className="sticky z-20" style={{ top: 0, height: "100svh" }}>
           <div className="relative h-full w-full">
@@ -1027,11 +1030,10 @@ export default function Home() {
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.25),rgba(7,18,24,.04),rgba(7,18,24,.45))]" />
 
-              {/* ✅ textes remontés (mobile) */}
+              {/* ✅ kicker supprimé + glass */}
               <SectionCaption
-                kicker="Communauté sportive engagée"
                 title="Des événements sportifs près de chez toi"
-                 liftClass="-translate-y-10 sm:-translate-y-6" // ✅ mobile + haut, desktop un peu
+                liftClass="-translate-y-10 sm:-translate-y-6"
                 subtitle={
                   <>Trouve et rejoins des entraînements adaptés à ton niveau et à ton rythme.</>
                 }
@@ -1071,11 +1073,10 @@ export default function Home() {
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.22),rgba(7,18,24,.06),rgba(7,18,24,.55))]" />
 
-              {/* ✅ textes remontés (mobile) */}
+              {/* ✅ kicker supprimé + glass */}
               <SectionCaption
-                kicker="Une plateforme multisports"
                 title="Course, vélo, danse, basket, etc."
-                 liftClass="-translate-y-10 sm:-translate-y-6" // ✅ mobile + haut, desktop un peu
+                liftClass="-translate-y-10 sm:-translate-y-6"
                 subtitle={<>Quelque soit ton sport, Tempo est là.</>}
               />
             </div>
@@ -1113,11 +1114,10 @@ export default function Home() {
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.18),rgba(7,18,24,.06),rgba(7,18,24,.58))]" />
 
-              {/* ✅ textes remontés (mobile) */}
+              {/* ✅ kicker supprimé + glass */}
               <SectionCaption
-                kicker="Centres d'intérêt partagés"
                 title="Le partenaire qui te ressemble."
-                liftClass="-translate-y-10 sm:-translate-y-6" // ✅ mobile + haut, desktop un peu
+                liftClass="-translate-y-10 sm:-translate-y-6"
                 subtitle={
                   <>
                     Faire du sport à deux, c&apos;est bien.
@@ -1157,7 +1157,7 @@ export default function Home() {
 
               <Reveal delayMs={120}>
                 <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/72 sm:text-base">
-                    Rendre les rencontres dans le milieu du sport plus pertinentes.
+                  Rendre les rencontres dans le milieu du sport plus pertinentes.
                 </p>
               </Reveal>
 
@@ -1212,9 +1212,9 @@ export default function Home() {
 
                   <div className="mt-6 text-sm font-extrabold text-white">L’équipe TEMPO</div>
                   <div className="mt-2 text-xs leading-relaxed text-white/70">
-                  “Je passais énormément de temps à m’entraîner et je croisais rarement des personnes
-                  avec le même rythme. Tempo est né de cette idée : un matching pertinent pour
-                  rencontrer des sportifs passionnés, avec les mêmes valeurs.”
+                    “Je passais énormément de temps à m’entraîner et je croisais rarement des
+                    personnes avec le même rythme. Tempo est né de cette idée : un matching
+                    pertinent pour rencontrer des sportifs passionnés, avec les mêmes valeurs.”
                   </div>
 
                   <div className="mt-5 text-xs leading-relaxed text-white/60">
