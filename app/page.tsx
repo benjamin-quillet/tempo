@@ -77,8 +77,8 @@ function SnapSection({
       {/* glow premium (subtil) */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.28]">
         <div className="absolute -top-56 left-1/2 h-[520px] w-[920px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,.12),transparent_60%)] blur-3xl" />
-        <div className="absolute top-[18%] left-[-220px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.22),transparent_60%)] blur-3xl" />
-        <div className="absolute bottom-[-260px] right-[-260px] h-[640px] w-[640px] rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.22),transparent_62%)] blur-3xl" />
+        <div className="absolute top-[18%] -left-[220px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.22),transparent_60%)] blur-3xl" />
+        <div className="absolute -bottom-[260px] -right-[260px] h-[640px] w-[640px] rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.22),transparent_62%)] blur-3xl" />
       </div>
 
       {/* grain discret */}
@@ -250,31 +250,26 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     };
 
-const isInsideRamp = (id: string) => {
-  const el = document.getElementById(id) as HTMLElement | null;
-  if (!el) return false;
+    const isInsideRamp = (id: string) => {
+      const el = document.getElementById(id) as HTMLElement | null;
+      if (!el) return false;
 
-  // zone "scrollable" de la section dans le scroller :
-  // de son top aligné (start) jusqu’au moment où le bas de la section arrive en bas du viewport (end)
-  const start = el.offsetTop - headerH;
-  const end = start + Math.max(1, el.offsetHeight - scroller.clientHeight);
+      const start = el.offsetTop - headerH;
+      const end = start + Math.max(1, el.offsetHeight - scroller.clientHeight);
 
-  const y = scroller.scrollTop;
-
-  // petit buffer pour éviter les oscillations au bord
-  const BUFFER = 8;
-  return y >= start - BUFFER && y <= end + BUFFER;
-};
-
+      const y = scroller.scrollTop;
+      const BUFFER = 8;
+      return y >= start - BUFFER && y <= end + BUFFER;
+    };
 
     const onWheel = (e: WheelEvent) => {
-      // ✅ pendant les rampes: laissez le scroll natif
       if (
         isInsideRamp("triphero") ||
         isInsideRamp("hero") ||
         isInsideRamp("ideas") ||
         isInsideRamp("hyrox") ||
-        isInsideRamp("photo")
+        isInsideRamp("photo") ||
+        isInsideRamp("team")
       ) {
         return;
       }
@@ -345,12 +340,13 @@ export default function Home() {
 
   const HEADER_H = 72;
 
-  const sections = ["triphero", "hero", "ideas", "hyrox", "photo", "footer"];
+  const sections = ["triphero", "hero", "ideas", "hyrox", "photo", "team", "footer"];
   const scrollerRef = useSnapScroll(sections, HEADER_H);
-const getEl = (id: string) => {
-  if (typeof window === "undefined") return null; // ✅ build/SSR
-  return document.getElementById(id) as HTMLElement | null;
-};
+
+  const getEl = (id: string) => {
+    if (typeof window === "undefined") return null;
+    return document.getElementById(id) as HTMLElement | null;
+  };
 
   const scrollToId = (id: string) => {
     const scroller = scrollerRef.current;
@@ -398,8 +394,8 @@ const getEl = (id: string) => {
     };
   }, [scrollerRef]);
 
-  // ✅ Trip HERO ramp (tout en haut)
-  // FIX CRITIQUE: pour le 1er écran, on NE soustrait PAS le header (sinon progress>0 au top)
+  /* ========================================================================== */
+  // Trip HERO ramp (iOS-friendly)
   const tripHeroRamp = useMemo(() => {
     const scroller = scrollerRef.current;
     const el = getEl("triphero");
@@ -409,7 +405,6 @@ const getEl = (id: string) => {
   const tripHeroP = tripHeroRamp.progress;
   const t = easeOutCubic(tripHeroP);
 
-  // déstructuration progressive (t=0 aligné, t=1 explose)
   const t1X = t * -90;
   const t1Y = t * -160;
   const t1R = t * -7.5;
@@ -428,33 +423,24 @@ const getEl = (id: string) => {
   const tripShadow = 0.12 + t * 0.22;
   const tripRadius = 0;
 
-  // ✅ HERO ramp
+  /* ========================================================================== */
   const heroRamp = useMemo(() => {
     const scroller = scrollerRef.current;
     const el = getEl("hero");
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
-const heroP = heroRamp.progress;
-const heroT = easeOutCubic(heroP); // ✅ courbe plus “ciné”
+  const heroP = heroRamp.progress;
+  const heroT = easeOutCubic(heroP);
 
-// 🔥 Effet plus marqué
-const heroScale = 1.20 - heroT * 0.26;     // 1.20 → 0.94
-const heroRotateX = 18 - heroT * 18;       // 18° → 0°
-const heroRotateY = -26 + heroT * 26;      // -26° → 0°
-const heroTranslateY = heroT * 62;         // 0 → 62px
-const heroTranslateX = heroT * -78;        // 0 → -78px
-const heroRadius = 72 - heroT * 46;        // 72 → 26
+  const heroScale = 1.2 - heroT * 0.26;
+  const heroRotateX = 18 - heroT * 18;
+  const heroRotateY = -26 + heroT * 26;
+  const heroTranslateY = heroT * 62;
+  const heroTranslateX = heroT * -78;
+  const heroRadius = 72 - heroT * 46;
 
-// Ombres (plus profond au début)
-const heroShadow = 0.58 - heroT * 0.28;    // 0.58 → 0.30
-
-// Reflet “specular” fin (pas un halo)
-const heroSpecOpacity = 0.28 - heroT * 0.18; // 0.28 → 0.10
-const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
-
-
-  // ✅ APPLI2 ramp
+  /* ========================================================================== */
   const appRamp = useMemo(() => {
     const scroller = scrollerRef.current;
     const el = getEl("ideas");
@@ -466,7 +452,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
   const appRadius = appP * 34;
   const appShadowOpacity = appP * 0.35;
 
-  // ✅ HYROX ramp
+  /* ========================================================================== */
   const hyroxRamp = useMemo(() => {
     const scroller = scrollerRef.current;
     const el = getEl("hyrox");
@@ -478,7 +464,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
   const hyroxRadius = hyroxP * 34;
   const hyroxShadowOpacity = hyroxP * 0.35;
 
-  // ✅ PHOTO ramp
+  /* ========================================================================== */
   const photoRamp = useMemo(() => {
     const scroller = scrollerRef.current;
     const el = getEl("photo");
@@ -500,7 +486,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
       ref={scrollerRef}
       className={[
         "snap-root",
-        "h-[100svh] overflow-y-auto overflow-x-hidden",
+        "h-svh overflow-y-auto overflow-x-hidden",
         "scroll-smooth",
         snapClasses,
         "text-white",
@@ -552,6 +538,13 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
             </button>
             <button
               type="button"
+              onClick={() => scrollToId("team")}
+              className="hover:text-white"
+            >
+              L’équipe
+            </button>
+            <button
+              type="button"
               onClick={() => scrollToId("footer")}
               className="hover:text-white"
             >
@@ -580,14 +573,12 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
         </div>
       </header>
 
-      {/* -------------------------------- TRIPTYQUE HERO (TOP) ------------------------------ */}
+      {/* -------------------------------- TRIPTYQUE HERO (TOP) — iOS OK ------------------------------ */}
       <SnapSection
         id="triphero"
         variant="dark"
         className={[
-          // ✅ plus de "page vide" : rampe = 1 écran (sticky) + 1 écran (spacer)
           "min-h-[200svh]",
-          // ✅ fond plus foncé, calé sur le bas du triptyque (plus de bleu)
           "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]",
         ].join(" ")}
       >
@@ -669,7 +660,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
                 <div
                   className="pointer-events-none absolute inset-0"
                   style={{
-                    opacity: 0.10 + t * 0.22,
+                    opacity: 0.1 + t * 0.22,
                     background:
                       "linear-gradient(90deg, rgba(255,255,255,0) 33.2%, rgba(255,255,255,.18) 33.35%, rgba(255,255,255,0) 33.5%, rgba(255,255,255,0) 66.5%, rgba(255,255,255,.18) 66.65%, rgba(255,255,255,0) 66.8%)",
                     mixBlendMode: "overlay",
@@ -680,8 +671,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
               </div>
 
               {/* ✅ CTA + Notes collés au triptyque (overlay bas) */}
-<div className="absolute inset-x-0 bottom-12 sm:bottom-34">
-                {/* petit dégradé pour lisibilité */}
+              <div className="absolute inset-x-0 bottom-12 sm:bottom-24">
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.75))]" />
                 <div className="relative px-5 pb-6">
                   <div className="mx-auto max-w-6xl">
@@ -698,15 +688,28 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
                 </div>
               </div>
 
-              <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
-                Trouve ton prochain partenaire d'entrainement
+              {/* ✅ FIX iOS: badge compact + safe-area + masqué si hauteur trop petite */}
+              <div
+                className={[
+                  "absolute left-4 sm:left-5",
+                  "top-[calc(env(safe-area-inset-top)+12px)] sm:top-5",
+                  "max-w-[72vw] sm:max-w-none",
+                  "rounded-2xl border border-white/14 bg-white/10 backdrop-blur",
+                  "px-2.5 py-1.5 sm:px-3 sm:py-2",
+                  "text-[10px] sm:text-xs font-extrabold text-white/90",
+                  "leading-tight",
+                  // iPhone très petits / paysage : on le cache pour ne JAMAIS masquer le triptyque
+                  "[@media(max-height:740px)]:hidden",
+                ].join(" ")}
+              >
+                Trouve ton prochain partenaire d&apos;entraînement
               </div>
             </div>
           </div>
         </div>
 
-        {/* ✅ spacer = 1 écran pile -> plus de “page vide” */}
-        <div className="h-[100svh]" />
+        {/* spacer */}
+        <div className="h-svh" />
       </SnapSection>
 
       {/* -------------------------------- HERO (texte + appli1) ------------------------------- */}
@@ -763,28 +766,25 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
 
             <Reveal className="md:justify-self-end" delayMs={160}>
               <div className="relative">
-<div
-  className="relative overflow-hidden"
-  style={{
-    borderRadius: `${heroRadius}px`,
-    transform: `perspective(950px) rotateX(${heroRotateX}deg) rotateY(${heroRotateY}deg) translateX(${heroTranslateX}px) translateY(${heroTranslateY}px) scale(${heroScale})`,
-    transformOrigin: "55% 35%",
-    willChange: "transform, border-radius",
-    // ✅ IMPORTANT : rien d’autre
-  }}
->
-  <Image
-    src={HERO}
-    alt="Aperçu TEMPO"
-    width={1400}
-    height={1000}
-    className="block h-auto w-full object-cover"
-    priority
-    unoptimized
-  />
-</div>
-
-
+                <div
+                  className="relative overflow-hidden"
+                  style={{
+                    borderRadius: `${heroRadius}px`,
+                    transform: `perspective(950px) rotateX(${heroRotateX}deg) rotateY(${heroRotateY}deg) translateX(${heroTranslateX}px) translateY(${heroTranslateY}px) scale(${heroScale})`,
+                    transformOrigin: "55% 35%",
+                    willChange: "transform, border-radius",
+                  }}
+                >
+                  <Image
+                    src={HERO}
+                    alt="Aperçu TEMPO"
+                    width={1400}
+                    height={1000}
+                    className="block h-auto w-full object-cover"
+                    priority
+                    unoptimized
+                  />
+                </div>
               </div>
             </Reveal>
           </div>
@@ -829,7 +829,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
                     Des événements sportifs près de chez toi
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-white/78">
-                    Trouve et rejoins des entraînements adaptés à ton niveau et à ton rythme 
+                    Trouve et rejoins des entraînements adaptés à ton niveau et à ton rythme
                   </p>
                 </div>
               </div>
@@ -889,7 +889,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
         <div className="h-[120svh]" />
       </SnapSection>
 
-      {/* -------------------------------- FEED (light) — DÉZOOM + ENCADRÉ BENJAMIN ------------------------------ */}
+      {/* -------------------------------- FEED (light) — DÉZOOM (BOUTONS ENLEVÉS) ------------------------------ */}
       <SnapSection id="photo" variant="light" className="min-h-[200svh]">
         <div
           className="sticky z-20"
@@ -918,7 +918,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.18),rgba(7,18,24,.06),rgba(7,18,24,.58))]" />
 
               <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
-                Centres d'intérêt partagés
+                Centres d&apos;intérêt partagés
               </div>
 
               <div className="absolute bottom-6 left-5 right-5">
@@ -927,71 +927,10 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
                     Le partenaire qui TE ressemble.
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-white/78">
-                    Faire du sport à deux, c'est bien. <br /> Faire du sport avec quelqu'un avec qui tu as des centres d'intérêts commun, c'est mieux.
+                    Faire du sport à deux, c&apos;est bien. <br />
+                    Faire du sport avec quelqu&apos;un avec qui tu as des centres d&apos;intérêts
+                    commun, c&apos;est mieux.
                   </p>
-
-                  <Reveal delayMs={120}>
-                    <div className="mt-5 w-full max-w-xl rounded-[28px] border border-white/14 bg-white/10 p-5 shadow-[0_22px_80px_rgba(0,0,0,.22)] backdrop-blur">
-                      <div className="flex items-center gap-4">
-                        <div className="relative h-14 w-14 overflow-hidden rounded-2xl border border-white/12 bg-white/10">
-                          <Image
-                            src="/benjamin.JPEG"
-                            alt="Benjamin"
-                            fill
-                            className="object-cover"
-                            priority
-                          />
-                        </div>
-
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <div className="text-sm font-extrabold text-white">
-                              Benjamin
-                            </div>
-                            <span className="text-xs text-white/55">•</span>
-                            <div className="text-xs font-semibold text-white/70">
-                              Créateur • passionné de sport
-                            </div>
-                          </div>
-
-                          <div className="mt-1">
-                            <a
-                              href={INSTAGRAM_BEN_URL}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-xs font-semibold text-white/75 hover:text-white"
-                            >
-                              @ben.ontrack ↗
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p className="mt-4 text-sm leading-relaxed text-white/78">
-                        “Je passais énormément de temps à m’entraîner et je croisais rarement des
-                        personnes avec le même rythme. Tempo est né de cette idée : un matching
-                        pertinent qui me permet de rencontrer des personnes autant passionnées de sport que moi et qui partagent les mêmes valeurs.”
-                      </p>
-                    </div>
-                  </Reveal>
-
-                  <div className="mt-4 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => scrollToId("footer")}
-                      className="rounded-2xl border border-white/14 bg-white/10 px-4 py-2 text-xs font-extrabold text-white/85 backdrop-blur transition hover:bg-white/14"
-                    >
-                      Contact ↘
-                    </button>
-                    <a
-                      href={INSTAGRAM_TEMPO_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs font-semibold text-white/70 hover:text-white"
-                    >
-                      Voir le compte Tempo ↗
-                    </a>
-                  </div>
                 </div>
               </div>
 
@@ -1003,8 +942,106 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
         <div className="h-[120svh]" />
       </SnapSection>
 
+      {/* -------------------------------- TEAM (PAGE DÉDIÉE) ------------------------------ */}
+      <SnapSection id="team" variant="dark" className="min-h-svh">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
+          <div className="absolute inset-0 bg-[radial-gradient(1000px_520px_at_18%_22%,rgba(131,199,177,.22),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(980px_520px_at_74%_45%,rgba(62,129,190,.18),transparent_60%)]" />
+        </div>
+
+        <div className="mx-auto flex min-h-[calc(100svh-72px)] max-w-6xl items-center px-5 py-12">
+          <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
+            <div>
+              <Reveal>
+                <div className="inline-flex w-fit rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
+                  À propos
+                </div>
+                <h2 className="mt-5 text-[30px] font-extrabold leading-[1.05] text-white sm:text-[38px] md:text-[46px]">
+                  TEMPO est né d’un besoin concret
+                </h2>
+              </Reveal>
+
+              <Reveal delayMs={120}>
+                <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/72 sm:text-base">
+                  “Je passais énormément de temps à m’entraîner et je croisais rarement des personnes
+                  avec le même rythme. Tempo est né de cette idée : un matching pertinent pour
+                  rencontrer des sportifs passionnés, avec les mêmes valeurs.”
+                </p>
+              </Reveal>
+
+              <Reveal delayMs={180}>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("download")}
+                    className="rounded-2xl border border-white/14 bg-white/10 px-4 py-2 text-xs font-extrabold text-white/85 backdrop-blur transition hover:bg-white/14"
+                  >
+                    Télécharger ↗
+                  </button>
+                </div>
+              </Reveal>
+            </div>
+
+            <Reveal className="md:justify-self-end" delayMs={140}>
+              <div className="w-full max-w-[520px]">
+                <div className="rounded-[30px] border border-white/14 bg-white/8 p-6 shadow-[0_26px_90px_rgba(0,0,0,.28)] backdrop-blur">
+                  <div className="flex items-center gap-4">
+                    <div className="relative h-14 w-14 overflow-hidden rounded-2xl border border-white/12 bg-white/10">
+                      <Image
+                        src="/benjamin.JPEG"
+                        alt="Benjamin"
+                        fill
+                        className="object-cover"
+                        priority
+                      />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <div className="text-sm font-extrabold text-white">Benjamin</div>
+                        <span className="text-xs text-white/55">•</span>
+                        <div className="text-xs font-semibold text-white/70">
+                          Créateur • passionné de sport
+                        </div>
+                      </div>
+
+                      <div className="mt-1">
+                        <a
+                          href={INSTAGRAM_BEN_URL}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-semibold text-white/75 hover:text-white"
+                        >
+                          @ben.ontrack ↗
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 text-sm font-extrabold text-white">L’équipe TEMPO</div>
+                  <div className="mt-2 text-xs leading-relaxed text-white/70">
+                    Produit, design et tech au service d’une idée simple : rendre la rencontre sportive
+                    plus naturelle, plus fiable, plus motivante.
+                  </div>
+
+                  <div className="mt-5 text-xs leading-relaxed text-white/60">
+                    Une question ?{" "}
+                    <a
+                      className="font-semibold text-white hover:underline"
+                      href={`mailto:${CONTACT_EMAIL}`}
+                    >
+                      {CONTACT_EMAIL}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </SnapSection>
+
       {/* -------------------------------- FOOTER (dark) ------------------------------ */}
-      <SnapSection id="footer" variant="dark" className="min-h-[100svh]">
+      <SnapSection id="footer" variant="dark" className="min-h-svh">
         <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
           <Image src={S_COURSE2} alt="" fill className="object-cover" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.70),rgba(7,18,24,.90))]" />
@@ -1071,6 +1108,13 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
                   className="text-left text-white/70 hover:text-white"
                 >
                   Communauté ↗
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToId("team")}
+                  className="text-left text-white/70 hover:text-white"
+                >
+                  L’équipe ↗
                 </button>
                 <button
                   type="button"
