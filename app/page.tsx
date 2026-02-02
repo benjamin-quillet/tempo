@@ -68,7 +68,6 @@ function SnapSection({
     <section
       id={id}
       className={[
-        // ✅ on force le snap “stop always” pour éviter les positions intermédiaires
         "relative isolate snap-start [scroll-snap-stop:always]",
         "w-full overflow-hidden",
         variant === "dark" ? dark : light,
@@ -219,8 +218,7 @@ function GoogleRating() {
  * ✅ Version “NO VIDES” (strict paging):
  * - wheel / trackpad => on force section suivante/précédente
  * - swipe mobile => idem
- * - au repos => on re-snap TOUJOURS à la section la plus proche (aucune exception)
- * => tu ne peux plus rester entre deux sections.
+ * - au repos => on re-snap TOUJOURS à la section la plus proche
  */
 function useSnapScroll(sectionIds: string[], headerH: number) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -275,7 +273,7 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       }, 520);
     };
 
-    // Trackpad: accumulation (sinon ça déclenche trop vite ou pas du tout selon device)
+    // Trackpad accumulation
     let acc = 0;
     let accT = 0;
 
@@ -284,8 +282,6 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
         e.preventDefault();
         return;
       }
-
-      // si l’utilisateur est en train de pincer/zoom ctrl+wheel, on ne casse pas
       if ((e as any).ctrlKey) return;
 
       const now = Date.now();
@@ -294,11 +290,9 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
 
       acc += e.deltaY;
 
-      // seuil un peu haut pour éviter les micro scrolls
       const TH = 40;
-
       if (Math.abs(acc) < TH) {
-        e.preventDefault(); // ✅ empêche de se poser “entre deux”
+        e.preventDefault();
         return;
       }
 
@@ -334,15 +328,11 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       const dy = e.changedTouches[0].clientY - touchStartY;
       const dx = e.changedTouches[0].clientX - touchStartX;
 
-      // ignore swipe horizontal
       if (Math.abs(dx) > Math.abs(dy)) return;
-
-      // swipe court/rapide
       if (dt > 700) return;
 
       const TH = 44;
       if (Math.abs(dy) < TH) {
-        // ✅ si petit swipe => on resnap pour éviter les “entre-deux”
         forceNearest();
         return;
       }
@@ -366,7 +356,6 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
     };
 
     const onResize = () => {
-      // après resize, on resnap (sinon offsets changent)
       window.clearTimeout(idleTimer);
       idleTimer = window.setTimeout(() => {
         forceNearest();
@@ -379,7 +368,6 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
     scroller.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("resize", onResize);
 
-    // première mise au propre
     const t = window.setTimeout(() => {
       forceNearest();
     }, 220);
@@ -420,6 +408,74 @@ function rampProgressFor(
   const progress = clamp01((scrollTop - start) / Math.max(1, h));
   return { progress, h };
 }
+
+function getNearestSectionIndex(
+  scroller: HTMLDivElement | null,
+  ids: string[],
+  headerH: number
+) {
+  if (!scroller) return 0;
+  const y = scroller.scrollTop;
+
+  let bestIdx = 0;
+  let bestDist = Infinity;
+
+  for (let i = 0; i < ids.length; i++) {
+    const el = document.getElementById(ids[i]) as HTMLElement | null;
+    if (!el) continue;
+    const top = el.offsetTop - headerH;
+    const d = Math.abs(y - top);
+    if (d < bestDist) {
+      bestDist = d;
+      bestIdx = i;
+    }
+  }
+  return Math.max(0, Math.min(ids.length - 1, bestIdx));
+}
+
+function SectionCaption({
+  kicker,
+  title,
+  subtitle,
+  position = "auto",
+  liftClass = "", // ✅ permet de monter/descendre facilement
+}: {
+  kicker: string;
+  title: string;
+  subtitle: React.ReactNode;
+  position?: "auto" | "top";
+  liftClass?: string;
+}) {
+  return (
+    <div
+      className={[
+        "absolute left-5 right-5",
+        position === "top"
+          ? "top-[calc(env(safe-area-inset-top)+72px)] sm:top-[calc(env(safe-area-inset-top)+88px)]"
+          : "top-[calc(env(safe-area-inset-top)+72px)] sm:top-auto sm:bottom-16",
+        // ✅ le vrai “move up”
+        "transform-gpu",
+        liftClass,
+      ].join(" ")}
+    >
+      <div className="relative max-w-2xl">
+        <div className="inline-flex rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/95 backdrop-blur">
+          {kicker}
+        </div>
+
+        <div className="mt-3 text-[22px] font-extrabold leading-tight text-white sm:text-[30px] md:text-[34px]">
+          {title}
+        </div>
+
+        <div className="mt-2 text-sm leading-relaxed text-white/85 sm:text-sm">
+          {subtitle}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 /* ---------------------------------- Page ---------------------------------- */
 export default function Home() {
@@ -485,6 +541,22 @@ export default function Home() {
       scroller.removeEventListener("scroll", onScroll as any);
     };
   }, [scrollerRef]);
+
+  // ✅ index courant (pour les boutons “Suivant/Précédent”)
+  const currentIdx = useMemo(() => {
+    if (typeof window === "undefined") return 0;
+    return getNearestSectionIndex(scrollerRef.current, sections, HEADER_H);
+  }, [scrollTop, scrollerRef]);
+
+  const goPrev = () => {
+    const idx = Math.max(0, currentIdx - 1);
+    scrollToId(sections[idx]);
+  };
+
+  const goNext = () => {
+    const idx = Math.min(sections.length - 1, currentIdx + 1);
+    scrollToId(sections[idx]);
+  };
 
   /* ========================================================================== */
   // Trip HERO ramp (iOS-friendly)
@@ -575,12 +647,10 @@ export default function Home() {
         "snap-root",
         "h-svh overflow-y-auto overflow-x-hidden",
         "scroll-smooth",
-        // ✅ snap TOUJOURS activé (sinon tu peux atterrir “entre deux”)
         "snap-y snap-mandatory",
         "text-white",
         "overscroll-y-contain",
       ].join(" ")}
-      // ✅ très important: compense le header pour le snap
       style={{ scrollPaddingTop: HEADER_H }}
     >
       {/* Header sticky */}
@@ -664,6 +734,43 @@ export default function Home() {
         </div>
       </header>
 
+      {/* ✅ NAV “Suivant / Précédent” (aide au scroll) */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[60]">
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-5">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/12 bg-white/10 px-2 py-2 shadow-[0_18px_60px_rgba(0,0,0,.28)] backdrop-blur">
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={currentIdx === 0}
+              className={[
+                "rounded-xl px-3 py-2 text-xs font-extrabold transition",
+                currentIdx === 0
+                  ? "cursor-not-allowed text-white/35"
+                  : "text-white/85 hover:bg-white/10",
+              ].join(" ")}
+            >
+              ↑ Précédent
+            </button>
+
+            <div className="mx-1 h-6 w-px bg-white/12" />
+
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={currentIdx >= sections.length - 1}
+              className={[
+                "rounded-xl px-3 py-2 text-xs font-extrabold transition",
+                currentIdx >= sections.length - 1
+                  ? "cursor-not-allowed text-white/35"
+                  : "text-white/85 hover:bg-white/10",
+              ].join(" ")}
+            >
+              Suivant ↓
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* -------------------------------- TRIPTYQUE HERO (TOP) — iOS OK ------------------------------ */}
       <SnapSection
         id="triphero"
@@ -673,6 +780,12 @@ export default function Home() {
           "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]",
         ].join(" ")}
       >
+              {/* ✅ background photo (course2) comme le footer */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
+        <Image src={S_COURSE2} alt="" fill className="object-cover" priority />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.72),rgba(7,18,24,.92))]" />
+      </div>
+
         <div className="sticky z-20" style={{ top: 0, height: "100svh" }}>
           <div className="relative h-full w-full">
             <div
@@ -770,7 +883,6 @@ export default function Home() {
                       id="download"
                       className={[
                         "grid scroll-mt-[84px] grid-cols-1 gap-3 sm:grid-cols-2",
-                        // ✅ mobile: rapprochement des boutons (superposition sur le triptyque)
                         "translate-y-[-36px] sm:translate-y-0",
                       ].join(" ")}
                     >
@@ -915,20 +1027,15 @@ export default function Home() {
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.25),rgba(7,18,24,.04),rgba(7,18,24,.45))]" />
 
-              <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
-                Communauté sportive engagée
-              </div>
-
-              <div className="absolute bottom-6 left-5 right-5">
-                <div className="max-w-xl">
-                  <div className="mt-2 text-[26px] font-extrabold leading-tight text-white md:text-[34px]">
-                    Des événements sportifs près de chez toi
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-white/78">
-                    Trouve et rejoins des entraînements adaptés à ton niveau et à ton rythme
-                  </p>
-                </div>
-              </div>
+              {/* ✅ textes remontés (mobile) */}
+              <SectionCaption
+                kicker="Communauté sportive engagée"
+                title="Des événements sportifs près de chez toi"
+                 liftClass="-translate-y-10 sm:-translate-y-6" // ✅ mobile + haut, desktop un peu
+                subtitle={
+                  <>Trouve et rejoins des entraînements adaptés à ton niveau et à ton rythme.</>
+                }
+              />
             </div>
           </div>
         </div>
@@ -964,20 +1071,13 @@ export default function Home() {
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.22),rgba(7,18,24,.06),rgba(7,18,24,.55))]" />
 
-              <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
-                Une plateforme multisports
-              </div>
-
-              <div className="absolute bottom-6 left-5 right-5">
-                <div className="max-w-xl">
-                  <div className="mt-2 text-[26px] font-extrabold leading-tight text-white md:text-[34px]">
-                    Course, vélo, danse, basket, etc.
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-white/78">
-                    Quelque soit ton sport, Tempo est là.
-                  </p>
-                </div>
-              </div>
+              {/* ✅ textes remontés (mobile) */}
+              <SectionCaption
+                kicker="Une plateforme multisports"
+                title="Course, vélo, danse, basket, etc."
+                 liftClass="-translate-y-10 sm:-translate-y-6" // ✅ mobile + haut, desktop un peu
+                subtitle={<>Quelque soit ton sport, Tempo est là.</>}
+              />
             </div>
           </div>
         </div>
@@ -1013,22 +1113,20 @@ export default function Home() {
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.18),rgba(7,18,24,.06),rgba(7,18,24,.58))]" />
 
-              <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
-                Centres d&apos;intérêt partagés
-              </div>
-
-              <div className="absolute bottom-6 left-5 right-5">
-                <div className="max-w-2xl">
-                  <div className="mt-2 text-[26px] font-extrabold leading-tight text-white md:text-[34px]">
-                    Le partenaire qui TE ressemble.
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-white/78">
-                    Faire du sport à deux, c&apos;est bien. <br />
+              {/* ✅ textes remontés (mobile) */}
+              <SectionCaption
+                kicker="Centres d'intérêt partagés"
+                title="Le partenaire qui te ressemble."
+                liftClass="-translate-y-10 sm:-translate-y-6" // ✅ mobile + haut, desktop un peu
+                subtitle={
+                  <>
+                    Faire du sport à deux, c&apos;est bien.
+                    <br />
                     Faire du sport avec quelqu&apos;un avec qui tu as des centres d&apos;intérêts
                     commun, c&apos;est mieux.
-                  </p>
-                </div>
-              </div>
+                  </>
+                }
+              />
 
               <div className="pointer-events-none absolute inset-0 opacity-[0.22] bg-[radial-gradient(900px_420px_at_50%_10%,rgba(255,255,255,.16),transparent_55%)]" />
             </div>
@@ -1059,9 +1157,7 @@ export default function Home() {
 
               <Reveal delayMs={120}>
                 <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/72 sm:text-base">
-                  “Je passais énormément de temps à m’entraîner et je croisais rarement des personnes
-                  avec le même rythme. Tempo est né de cette idée : un matching pertinent pour
-                  rencontrer des sportifs passionnés, avec les mêmes valeurs.”
+                    Rendre les rencontres dans le milieu du sport plus pertinentes.
                 </p>
               </Reveal>
 
@@ -1116,8 +1212,9 @@ export default function Home() {
 
                   <div className="mt-6 text-sm font-extrabold text-white">L’équipe TEMPO</div>
                   <div className="mt-2 text-xs leading-relaxed text-white/70">
-                    Produit, design et tech au service d’une idée simple : rendre la rencontre sportive
-                    plus naturelle, plus fiable, plus motivante.
+                  “Je passais énormément de temps à m’entraîner et je croisais rarement des personnes
+                  avec le même rythme. Tempo est né de cette idée : un matching pertinent pour
+                  rencontrer des sportifs passionnés, avec les mêmes valeurs.”
                   </div>
 
                   <div className="mt-5 text-xs leading-relaxed text-white/60">
