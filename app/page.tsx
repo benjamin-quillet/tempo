@@ -68,7 +68,8 @@ function SnapSection({
     <section
       id={id}
       className={[
-        "relative isolate snap-start",
+        // ✅ on force le snap “stop always” pour éviter les positions intermédiaires
+        "relative isolate snap-start [scroll-snap-stop:always]",
         "w-full overflow-hidden",
         variant === "dark" ? dark : light,
         className,
@@ -214,6 +215,13 @@ function GoogleRating() {
 }
 
 /* ------------------------------ Snap Scrolling ------------------------------ */
+/**
+ * ✅ Version “NO VIDES” (strict paging):
+ * - wheel / trackpad => on force section suivante/précédente
+ * - swipe mobile => idem
+ * - au repos => on re-snap TOUJOURS à la section la plus proche (aucune exception)
+ * => tu ne peux plus rester entre deux sections.
+ */
 function useSnapScroll(sectionIds: string[], headerH: number) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const lockRef = useRef(false);
@@ -222,83 +230,167 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
     const scroller = scrollerRef.current;
     if (!scroller) return;
 
-    const getTops = () =>
+    const clampIdx = (idx: number) =>
+      Math.max(0, Math.min(sectionIds.length - 1, idx));
+
+    const getTargets = () =>
       sectionIds
-        .map((id) => document.getElementById(id))
-        .filter(Boolean)
-        .map((el) => (el as HTMLElement).offsetTop);
-
-    let tops = getTops();
-    const refresh = () => {
-      tops = getTops();
-    };
-
-    const getCurrentIndex = () => {
-      const y = scroller.scrollTop + scroller.clientHeight * 0.45;
-      let idx = 0;
-      for (let i = 0; i < tops.length; i++) {
-        if (y >= tops[i] - headerH) idx = i;
-      }
-      return Math.max(0, Math.min(sectionIds.length - 1, idx));
-    };
+        .map((id) => document.getElementById(id) as HTMLElement | null)
+        .filter(Boolean) as HTMLElement[];
 
     const scrollToIndex = (idx: number) => {
-      const clamped = Math.max(0, Math.min(sectionIds.length - 1, idx));
+      const clamped = clampIdx(idx);
       const el = document.getElementById(sectionIds[clamped]) as HTMLElement | null;
       if (!el) return;
+
       const top = el.offsetTop - headerH;
       scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     };
 
-    const isInsideRamp = (id: string) => {
-      const el = document.getElementById(id) as HTMLElement | null;
-      if (!el) return false;
-
-      const start = el.offsetTop - headerH;
-      const end = start + Math.max(1, el.offsetHeight - scroller.clientHeight);
-
+    const getNearestIndex = () => {
       const y = scroller.scrollTop;
-      const BUFFER = 8;
-      return y >= start - BUFFER && y <= end + BUFFER;
+      const targets = getTargets();
+      if (!targets.length) return 0;
+
+      let bestIdx = 0;
+      let bestDist = Infinity;
+
+      for (let i = 0; i < targets.length; i++) {
+        const top = targets[i].offsetTop - headerH;
+        const d = Math.abs(y - top);
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx = i;
+        }
+      }
+      return clampIdx(bestIdx);
     };
 
+    const forceNearest = () => {
+      if (lockRef.current) return;
+      lockRef.current = true;
+      scrollToIndex(getNearestIndex());
+      window.setTimeout(() => {
+        lockRef.current = false;
+      }, 520);
+    };
+
+    // Trackpad: accumulation (sinon ça déclenche trop vite ou pas du tout selon device)
+    let acc = 0;
+    let accT = 0;
+
     const onWheel = (e: WheelEvent) => {
-      if (
-        isInsideRamp("triphero") ||
-        isInsideRamp("hero") ||
-        isInsideRamp("ideas") ||
-        isInsideRamp("hyrox") ||
-        isInsideRamp("photo") ||
-        isInsideRamp("team")
-      ) {
+      if (lockRef.current) {
+        e.preventDefault();
         return;
       }
 
-      if (lockRef.current) return;
-      if (Math.abs(e.deltaY) < 12) return;
+      // si l’utilisateur est en train de pincer/zoom ctrl+wheel, on ne casse pas
+      if ((e as any).ctrlKey) return;
+
+      const now = Date.now();
+      if (now - accT > 140) acc = 0;
+      accT = now;
+
+      acc += e.deltaY;
+
+      // seuil un peu haut pour éviter les micro scrolls
+      const TH = 40;
+
+      if (Math.abs(acc) < TH) {
+        e.preventDefault(); // ✅ empêche de se poser “entre deux”
+        return;
+      }
 
       e.preventDefault();
+      const dir = acc > 0 ? 1 : -1;
+      acc = 0;
+
+      const idx = getNearestIndex();
       lockRef.current = true;
-
-      const dir = e.deltaY > 0 ? 1 : -1;
-      const idx = getCurrentIndex();
       scrollToIndex(idx + dir);
-
       window.setTimeout(() => {
         lockRef.current = false;
       }, 650);
     };
 
-    const onResize = () => refresh();
+    // Mobile swipe
+    let touchStartY = 0;
+    let touchStartX = 0;
+    let touchT = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (!e.touches?.length) return;
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+      touchT = Date.now();
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (lockRef.current) return;
+      if (!e.changedTouches?.length) return;
+
+      const dt = Date.now() - touchT;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+
+      // ignore swipe horizontal
+      if (Math.abs(dx) > Math.abs(dy)) return;
+
+      // swipe court/rapide
+      if (dt > 700) return;
+
+      const TH = 44;
+      if (Math.abs(dy) < TH) {
+        // ✅ si petit swipe => on resnap pour éviter les “entre-deux”
+        forceNearest();
+        return;
+      }
+
+      const dir = dy < 0 ? 1 : -1;
+      const idx = getNearestIndex();
+      lockRef.current = true;
+      scrollToIndex(idx + dir);
+      window.setTimeout(() => {
+        lockRef.current = false;
+      }, 650);
+    };
+
+    // Snap au repos (TOUJOURS)
+    let idleTimer = 0;
+    const onScroll = () => {
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        forceNearest();
+      }, 110);
+    };
+
+    const onResize = () => {
+      // après resize, on resnap (sinon offsets changent)
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        forceNearest();
+      }, 60);
+    };
 
     scroller.addEventListener("wheel", onWheel, { passive: false });
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    scroller.addEventListener("touchstart", onTouchStart, { passive: true });
+    scroller.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("resize", onResize);
 
-    const t = window.setTimeout(refresh, 250);
+    // première mise au propre
+    const t = window.setTimeout(() => {
+      forceNearest();
+    }, 220);
 
     return () => {
       window.clearTimeout(t);
+      window.clearTimeout(idleTimer);
       scroller.removeEventListener("wheel", onWheel as any);
+      scroller.removeEventListener("scroll", onScroll as any);
+      scroller.removeEventListener("touchstart", onTouchStart as any);
+      scroller.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("resize", onResize);
     };
   }, [sectionIds, headerH]);
@@ -476,11 +568,6 @@ export default function Home() {
   const photoRadius = photoP * 34;
   const photoShadowOpacity = photoP * 0.35;
 
-  // Snap CSS OFF pendant les rampes
-  const disableSnapCss =
-    tripHeroP < 1 || heroP < 1 || appP < 1 || hyroxP < 1 || photoP < 1;
-  const snapClasses = disableSnapCss ? "" : "snap-y snap-mandatory";
-
   return (
     <div
       ref={scrollerRef}
@@ -488,9 +575,13 @@ export default function Home() {
         "snap-root",
         "h-svh overflow-y-auto overflow-x-hidden",
         "scroll-smooth",
-        snapClasses,
+        // ✅ snap TOUJOURS activé (sinon tu peux atterrir “entre deux”)
+        "snap-y snap-mandatory",
         "text-white",
+        "overscroll-y-contain",
       ].join(" ")}
+      // ✅ très important: compense le header pour le snap
+      style={{ scrollPaddingTop: HEADER_H }}
     >
       {/* Header sticky */}
       <header className="sticky top-0 z-50 border-b border-white/5 bg-tempo-ink/70 backdrop-blur">
@@ -671,24 +762,30 @@ export default function Home() {
               </div>
 
               {/* ✅ CTA + Notes collés au triptyque (overlay bas) */}
-              <div className="absolute inset-x-0 bottom-12 sm:bottom-24">
+              <div className="absolute inset-x-0 bottom-10 sm:bottom-24">
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.75))]" />
                 <div className="relative px-5 pb-6">
                   <div className="mx-auto max-w-6xl">
                     <div
                       id="download"
-                      className="grid scroll-mt-[84px] grid-cols-1 gap-3 sm:grid-cols-2"
+                      className={[
+                        "grid scroll-mt-[84px] grid-cols-1 gap-3 sm:grid-cols-2",
+                        // ✅ mobile: rapprochement des boutons (superposition sur le triptyque)
+                        "translate-y-[-18px] sm:translate-y-0",
+                      ].join(" ")}
                     >
                       <DownloadButton href={APP_STORE_URL} store="appstore" />
                       <DownloadButton href={PLAY_STORE_URL} store="play" />
                     </div>
 
-                    <GoogleRating />
+                    <div className="translate-y-[-10px] sm:translate-y-0">
+                      <GoogleRating />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* ✅ FIX iOS: badge compact + safe-area + masqué si hauteur trop petite */}
+              {/* Badge */}
               <div
                 className={[
                   "absolute left-4 sm:left-5",
@@ -698,7 +795,6 @@ export default function Home() {
                   "px-2.5 py-1.5 sm:px-3 sm:py-2",
                   "text-[10px] sm:text-xs font-extrabold text-white/90",
                   "leading-tight",
-                  // iPhone très petits / paysage : on le cache pour ne JAMAIS masquer le triptyque
                   "[@media(max-height:740px)]:hidden",
                 ].join(" ")}
               >
@@ -889,7 +985,7 @@ export default function Home() {
         <div className="h-[120svh]" />
       </SnapSection>
 
-      {/* -------------------------------- FEED (light) — DÉZOOM (BOUTONS ENLEVÉS) ------------------------------ */}
+      {/* -------------------------------- FEED (light) — DÉZOOM ------------------------------ */}
       <SnapSection id="photo" variant="light" className="min-h-[200svh]">
         <div
           className="sticky z-20"
