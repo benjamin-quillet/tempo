@@ -347,6 +347,10 @@ export default function Home() {
 
   const sections = ["triphero", "hero", "ideas", "hyrox", "photo", "footer"];
   const scrollerRef = useSnapScroll(sections, HEADER_H);
+const getEl = (id: string) => {
+  if (typeof window === "undefined") return null; // ✅ build/SSR
+  return document.getElementById(id) as HTMLElement | null;
+};
 
   const scrollToId = (id: string) => {
     const scroller = scrollerRef.current;
@@ -398,7 +402,7 @@ export default function Home() {
   // FIX CRITIQUE: pour le 1er écran, on NE soustrait PAS le header (sinon progress>0 au top)
   const tripHeroRamp = useMemo(() => {
     const scroller = scrollerRef.current;
-    const el = document.getElementById("triphero") as HTMLElement | null;
+    const el = getEl("triphero");
     return rampProgressFor(scroller, el, scrollTop, 0);
   }, [scrollTop, scrollerRef]);
 
@@ -427,7 +431,7 @@ export default function Home() {
   // ✅ HERO ramp
   const heroRamp = useMemo(() => {
     const scroller = scrollerRef.current;
-    const el = document.getElementById("hero") as HTMLElement | null;
+    const el = getEl("hero");
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
@@ -453,7 +457,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
   // ✅ APPLI2 ramp
   const appRamp = useMemo(() => {
     const scroller = scrollerRef.current;
-    const el = document.getElementById("ideas") as HTMLElement | null;
+    const el = getEl("ideas");
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
@@ -465,7 +469,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
   // ✅ HYROX ramp
   const hyroxRamp = useMemo(() => {
     const scroller = scrollerRef.current;
-    const el = document.getElementById("hyrox") as HTMLElement | null;
+    const el = getEl("hyrox");
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
@@ -477,7 +481,7 @@ const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
   // ✅ PHOTO ramp
   const photoRamp = useMemo(() => {
     const scroller = scrollerRef.current;
-    const el = document.getElementById("photo") as HTMLElement | null;
+    const el = getEl("photo");
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
