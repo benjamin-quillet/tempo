@@ -140,8 +140,8 @@ function Ul({ children }: { children: React.ReactNode }) {
 /* ---------------------------------- Page ---------------------------------- */
 export default function CGUPage() {
   const APP_NAME = "TEMPO";
-  const CONTACT_EMAIL = "contact@tempo.app";
-  const INSTAGRAM_TEMPO_URL = "https://instagram.com/tempo";
+  const CONTACT_EMAIL = "contact@jointhetempo.app";
+  const INSTAGRAM_TEMPO_URL = "https://www.instagram.com/jointhetempo.app/";
   const LAST_UPDATE = "12 janvier 2026";
 
   const toc = useMemo(
@@ -202,7 +202,7 @@ export default function CGUPage() {
               rel="noreferrer"
               className="hidden rounded-xl border border-white/10 bg-white/7 px-3 py-2 text-xs font-semibold text-white/85 backdrop-blur transition hover:bg-white/12 md:inline-flex"
             >
-              @tempo ↗
+              @jointhetempo.app ↗
             </a>
             <a
               href="/"

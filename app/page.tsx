@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /* --------------------------------- Reveal --------------------------------- */
 type RevealProps = {
@@ -52,10 +52,12 @@ function SnapSection({
   id,
   variant,
   children,
+  className = "",
 }: {
   id?: string;
   variant: "dark" | "light";
   children: React.ReactNode;
+  className?: string;
 }) {
   const dark =
     "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]";
@@ -67,8 +69,9 @@ function SnapSection({
       id={id}
       className={[
         "relative isolate snap-start",
-        "min-h-[100svh] w-full overflow-hidden",
+        "w-full overflow-hidden",
         variant === "dark" ? dark : light,
+        className,
       ].join(" ")}
     >
       {/* glow premium (subtil) */}
@@ -165,84 +168,46 @@ function DownloadButton({
   );
 }
 
-/* ------------------------------ NEW: Sport Photo ---------------------------- */
-function SportPhoto({
-  src,
-  className = "",
-  priority = false,
-}: {
-  src: string;
-  className?: string;
-  priority?: boolean;
-}) {
+/* ------------------------------ Google Rating --------------------------- */
+function Stars({ value, outOf = 5 }: { value: number; outOf?: number }) {
+  const pct = Math.max(0, Math.min(100, (value / outOf) * 100));
+  return (
+    <span className="relative inline-block leading-none">
+      <span className="text-white/35">{"★★★★★"}</span>
+      <span
+        className="absolute left-0 top-0 overflow-hidden text-amber-300"
+        style={{ width: `${pct}%` }}
+        aria-hidden
+      >
+        {"★★★★★"}
+      </span>
+    </span>
+  );
+}
+
+function GoogleRating() {
   return (
     <div
       className={[
-        "relative overflow-hidden rounded-[30px] border border-white/12 bg-white/6",
-        "shadow-[0_28px_110px_rgba(0,0,0,.26)] backdrop-blur",
-        className,
+        "mt-3 flex items-center justify-between gap-4",
+        "rounded-2xl border border-white/12 bg-white/7 px-5 py-4",
+        "shadow-[0_18px_60px_rgba(0,0,0,.18)] backdrop-blur",
       ].join(" ")}
     >
-      <Image src={src} alt="" fill className="object-cover" priority={priority} />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.55))]" />
-      <div className="pointer-events-none absolute inset-0 opacity-35 bg-[radial-gradient(900px_260px_at_25%_0%,rgba(255,255,255,.22),transparent_55%)]" />
-    </div>
-  );
-}
-
-/* ------------------------------ NEW: Chapters ------------------------------- */
-function Chapter({
-  n,
-  title,
-  desc,
-}: {
-  n: "01" | "02" | "03";
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="relative">
-      {/* big ghost number */}
-      <div className="pointer-events-none absolute -top-6 -left-2 text-[72px] font-black leading-none text-white/10">
-        {n}
-      </div>
-
-      <div className="relative rounded-[26px] border border-white/12 bg-white/7 p-6 shadow-[0_22px_70px_rgba(0,0,0,.16)] backdrop-blur">
-        <div className="flex items-baseline justify-between gap-6">
-          <div className="text-[11px] font-semibold tracking-widest text-white/60">
-            {n}
+      <div className="min-w-0">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-white/60">
+          Notes Google
+        </div>
+        <div className="mt-1 flex items-center gap-3">
+          <div className="text-sm font-extrabold text-white">4.4</div>
+          <div className="text-sm">
+            <Stars value={4.4} />
           </div>
-          <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(255,255,255,.20),rgba(255,255,255,0))]" />
         </div>
-
-        <div className="mt-3 text-[18px] font-extrabold text-white">{title}</div>
-        <p className="mt-2 text-sm leading-relaxed text-white/74">{desc}</p>
       </div>
-    </div>
-  );
-}
 
-/* ------------------------------ Algo / Tech panel --------------------------- */
-function TechPanel() {
-  return (
-    <div className="relative overflow-hidden rounded-[28px] border border-white/12 bg-white/7 p-6 shadow-[0_22px_70px_rgba(0,0,0,.14)] backdrop-blur">
-      <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.22),transparent_62%)] blur-2xl" />
-      <div className="pointer-events-none absolute -left-24 -bottom-24 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.22),transparent_62%)] blur-2xl" />
-      <div className="pointer-events-none absolute left-[22%] top-[-70px] h-[220px] w-[220px] rotate-12 rounded-[44px] bg-[linear-gradient(135deg,rgba(131,199,177,.18),rgba(255,255,255,.06))] blur-xl" />
-
-      <div className="flex flex-col gap-2">
-        <div className="text-[11px] font-semibold tracking-widest text-white/60">
-          MATCHING SPORTIF
-        </div>
-
-        <div className="text-[22px] font-extrabold leading-tight text-white">
-          Un algorithme pensé pour l’entraînement.
-        </div>
-
-        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-white/75">
-          Sport, rythme et objectifs : Tempo propose des profils cohérents basés sur un
-          algorithme de matching avancé.
-        </p>
+      <div className="shrink-0 rounded-2xl border border-white/12 bg-white/7 px-3 py-2 text-xs font-extrabold text-white/90">
+        ★ 4.4
       </div>
     </div>
   );
@@ -257,24 +222,63 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
     const scroller = scrollerRef.current;
     if (!scroller) return;
 
+    const getTops = () =>
+      sectionIds
+        .map((id) => document.getElementById(id))
+        .filter(Boolean)
+        .map((el) => (el as HTMLElement).offsetTop);
+
+    let tops = getTops();
+    const refresh = () => {
+      tops = getTops();
+    };
+
     const getCurrentIndex = () => {
-      const y = scroller.scrollTop;
-      const h = scroller.clientHeight;
-      const idx = Math.round(y / h);
+      const y = scroller.scrollTop + scroller.clientHeight * 0.45;
+      let idx = 0;
+      for (let i = 0; i < tops.length; i++) {
+        if (y >= tops[i] - headerH) idx = i;
+      }
       return Math.max(0, Math.min(sectionIds.length - 1, idx));
     };
 
     const scrollToIndex = (idx: number) => {
       const clamped = Math.max(0, Math.min(sectionIds.length - 1, idx));
-      const targetId = sectionIds[clamped];
-      const el = document.getElementById(targetId);
+      const el = document.getElementById(sectionIds[clamped]) as HTMLElement | null;
       if (!el) return;
-
       const top = el.offsetTop - headerH;
       scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     };
 
+const isInsideRamp = (id: string) => {
+  const el = document.getElementById(id) as HTMLElement | null;
+  if (!el) return false;
+
+  // zone "scrollable" de la section dans le scroller :
+  // de son top aligné (start) jusqu’au moment où le bas de la section arrive en bas du viewport (end)
+  const start = el.offsetTop - headerH;
+  const end = start + Math.max(1, el.offsetHeight - scroller.clientHeight);
+
+  const y = scroller.scrollTop;
+
+  // petit buffer pour éviter les oscillations au bord
+  const BUFFER = 8;
+  return y >= start - BUFFER && y <= end + BUFFER;
+};
+
+
     const onWheel = (e: WheelEvent) => {
+      // ✅ pendant les rampes: laissez le scroll natif
+      if (
+        isInsideRamp("triphero") ||
+        isInsideRamp("hero") ||
+        isInsideRamp("ideas") ||
+        isInsideRamp("hyrox") ||
+        isInsideRamp("photo")
+      ) {
+        return;
+      }
+
       if (lockRef.current) return;
       if (Math.abs(e.deltaY) < 12) return;
 
@@ -290,11 +294,44 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       }, 650);
     };
 
+    const onResize = () => refresh();
+
     scroller.addEventListener("wheel", onWheel, { passive: false });
-    return () => scroller.removeEventListener("wheel", onWheel as any);
+    window.addEventListener("resize", onResize);
+
+    const t = window.setTimeout(refresh, 250);
+
+    return () => {
+      window.clearTimeout(t);
+      scroller.removeEventListener("wheel", onWheel as any);
+      window.removeEventListener("resize", onResize);
+    };
   }, [sectionIds, headerH]);
 
   return scrollerRef;
+}
+
+/* ------------------------------ helpers ----------------------------- */
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v));
+}
+
+function easeOutCubic(t: number) {
+  const x = clamp01(t);
+  return 1 - Math.pow(1 - x, 3);
+}
+
+function rampProgressFor(
+  scroller: HTMLDivElement | null,
+  el: HTMLElement | null,
+  scrollTop: number,
+  headerH: number
+) {
+  if (!scroller || !el) return { progress: 0, h: 1 };
+  const start = el.offsetTop - headerH;
+  const h = scroller.clientHeight;
+  const progress = clamp01((scrollTop - start) / Math.max(1, h));
+  return { progress, h };
 }
 
 /* ---------------------------------- Page ---------------------------------- */
@@ -302,40 +339,157 @@ export default function Home() {
   const APP_STORE_URL = "#";
   const PLAY_STORE_URL = "#";
 
-  const GOOGLE_FORM_URL =
-    "https://docs.google.com/forms/d/e/1FAIpQLSdbD-0gYEpuSPiReYmy4j7BvSonc79vUeElfJwsYlAErfENGQ/viewform?usp=dialog";
-
-  const INSTAGRAM_TEMPO_URL = "https://instagram.com/tempo";
+  const INSTAGRAM_TEMPO_URL = "https://www.instagram.com/jointhetempo.app/";
   const INSTAGRAM_BEN_URL = "https://instagram.com/ben.ontrack";
   const CONTACT_EMAIL = "contact@jointhetempo.app";
 
   const HEADER_H = 72;
 
-  const sections = ["top", "ideas", "team", "footer"];
+  const sections = ["triphero", "hero", "ideas", "hyrox", "photo", "footer"];
   const scrollerRef = useSnapScroll(sections, HEADER_H);
 
   const scrollToId = (id: string) => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
-    const el = document.getElementById(id);
+    const el = document.getElementById(id) as HTMLElement | null;
     if (!el) return;
-
     const top = el.offsetTop - HEADER_H;
     scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   };
 
+  // images
+  const HERO = "/appli1.png";
   const APP2 = "/appli2.png";
-
-  // ✅ tes sports dans /public/sports
+  const PHOTO1 = "/sports/course1.jpg";
+  const HYROX_IMG = "/sports/hyrox1.jpg";
   const S_COURSE2 = "/sports/course2.jpg";
-  const S_COURSE1 = "/sports/course1.jpg";
-  const S_HYROX = "/sports/hyrox1.jpg";
-  const S_ESCALADE = "/sports/escalade2.jpg";
-  const S_MUSCU = "/sports/muscu1.jpg";
-  const S_VELO = "/sports/velo1.jpg";
-  const S_TENNIS = "/sports/tennis1.jpg";
-  const S_PILATE = "/sports/pilate1.jpg";
-  const S_ATHLE = "/sports/athletisme1.jpg";
+
+  // Triptyque
+  const TRIP_1 = "/Triptique 1.png";
+  const TRIP_2 = "/Triptique 2.png";
+  const TRIP_3 = "/Triptique 3.png";
+
+  // scroll tracking
+  const [scrollTop, setScrollTop] = useState(0);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        setScrollTop(scroller.scrollTop);
+      });
+    };
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    setScrollTop(scroller.scrollTop);
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      scroller.removeEventListener("scroll", onScroll as any);
+    };
+  }, [scrollerRef]);
+
+  // ✅ Trip HERO ramp (tout en haut)
+  // FIX CRITIQUE: pour le 1er écran, on NE soustrait PAS le header (sinon progress>0 au top)
+  const tripHeroRamp = useMemo(() => {
+    const scroller = scrollerRef.current;
+    const el = document.getElementById("triphero") as HTMLElement | null;
+    return rampProgressFor(scroller, el, scrollTop, 0);
+  }, [scrollTop, scrollerRef]);
+
+  const tripHeroP = tripHeroRamp.progress;
+  const t = easeOutCubic(tripHeroP);
+
+  // déstructuration progressive (t=0 aligné, t=1 explose)
+  const t1X = t * -90;
+  const t1Y = t * -160;
+  const t1R = t * -7.5;
+  const t1Z = t * 80;
+
+  const t2X = t * 40;
+  const t2Y = t * 260;
+  const t2R = t * 6.5;
+  const t2Z = t * 140;
+
+  const t3X = t * 110;
+  const t3Y = t * -360;
+  const t3R = t * -6.0;
+  const t3Z = t * 60;
+
+  const tripShadow = 0.12 + t * 0.22;
+  const tripRadius = 0;
+
+  // ✅ HERO ramp
+  const heroRamp = useMemo(() => {
+    const scroller = scrollerRef.current;
+    const el = document.getElementById("hero") as HTMLElement | null;
+    return rampProgressFor(scroller, el, scrollTop, HEADER_H);
+  }, [scrollTop, scrollerRef]);
+
+const heroP = heroRamp.progress;
+const heroT = easeOutCubic(heroP); // ✅ courbe plus “ciné”
+
+// 🔥 Effet plus marqué
+const heroScale = 1.20 - heroT * 0.26;     // 1.20 → 0.94
+const heroRotateX = 18 - heroT * 18;       // 18° → 0°
+const heroRotateY = -26 + heroT * 26;      // -26° → 0°
+const heroTranslateY = heroT * 62;         // 0 → 62px
+const heroTranslateX = heroT * -78;        // 0 → -78px
+const heroRadius = 72 - heroT * 46;        // 72 → 26
+
+// Ombres (plus profond au début)
+const heroShadow = 0.58 - heroT * 0.28;    // 0.58 → 0.30
+
+// Reflet “specular” fin (pas un halo)
+const heroSpecOpacity = 0.28 - heroT * 0.18; // 0.28 → 0.10
+const heroSpecX = (1 - heroT) * -120;        // slide gauche→droite
+
+
+  // ✅ APPLI2 ramp
+  const appRamp = useMemo(() => {
+    const scroller = scrollerRef.current;
+    const el = document.getElementById("ideas") as HTMLElement | null;
+    return rampProgressFor(scroller, el, scrollTop, HEADER_H);
+  }, [scrollTop, scrollerRef]);
+
+  const appP = appRamp.progress;
+  const appScale = 1 - appP * 0.18;
+  const appRadius = appP * 34;
+  const appShadowOpacity = appP * 0.35;
+
+  // ✅ HYROX ramp
+  const hyroxRamp = useMemo(() => {
+    const scroller = scrollerRef.current;
+    const el = document.getElementById("hyrox") as HTMLElement | null;
+    return rampProgressFor(scroller, el, scrollTop, HEADER_H);
+  }, [scrollTop, scrollerRef]);
+
+  const hyroxP = hyroxRamp.progress;
+  const hyroxScale = 1 - hyroxP * 0.18;
+  const hyroxRadius = hyroxP * 34;
+  const hyroxShadowOpacity = hyroxP * 0.35;
+
+  // ✅ PHOTO ramp
+  const photoRamp = useMemo(() => {
+    const scroller = scrollerRef.current;
+    const el = document.getElementById("photo") as HTMLElement | null;
+    return rampProgressFor(scroller, el, scrollTop, HEADER_H);
+  }, [scrollTop, scrollerRef]);
+
+  const photoP = photoRamp.progress;
+  const photoScale = 1 - photoP * 0.18;
+  const photoRadius = photoP * 34;
+  const photoShadowOpacity = photoP * 0.35;
+
+  // Snap CSS OFF pendant les rampes
+  const disableSnapCss =
+    tripHeroP < 1 || heroP < 1 || appP < 1 || hyroxP < 1 || photoP < 1;
+  const snapClasses = disableSnapCss ? "" : "snap-y snap-mandatory";
 
   return (
     <div
@@ -343,7 +497,8 @@ export default function Home() {
       className={[
         "snap-root",
         "h-[100svh] overflow-y-auto overflow-x-hidden",
-        "scroll-smooth snap-y snap-mandatory",
+        "scroll-smooth",
+        snapClasses,
         "text-white",
       ].join(" ")}
     >
@@ -352,7 +507,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <button
             type="button"
-            onClick={() => scrollToId("top")}
+            onClick={() => scrollToId("triphero")}
             className="flex items-center gap-3"
           >
             <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-[0_14px_40px_rgba(0,0,0,.25)]">
@@ -379,17 +534,17 @@ export default function Home() {
           <nav className="hidden items-center gap-6 text-sm text-white/70 md:flex">
             <button
               type="button"
-              onClick={() => scrollToId("ideas")}
+              onClick={() => scrollToId("hero")}
               className="hover:text-white"
             >
               L’app
             </button>
             <button
               type="button"
-              onClick={() => scrollToId("team")}
+              onClick={() => scrollToId("ideas")}
               className="hover:text-white"
             >
-              L’équipe
+              Communauté
             </button>
             <button
               type="button"
@@ -407,7 +562,7 @@ export default function Home() {
               rel="noreferrer"
               className="hidden rounded-xl border border-white/10 bg-white/7 px-3 py-2 text-xs font-semibold text-white/85 backdrop-blur transition hover:bg-white/12 md:inline-flex"
             >
-              @tempo ↗
+              @jointhetempo.app ↗
             </a>
 
             <button
@@ -421,8 +576,137 @@ export default function Home() {
         </div>
       </header>
 
-      {/* -------------------------------- HERO (dark) ------------------------------- */}
-      <SnapSection id="top" variant="dark">
+      {/* -------------------------------- TRIPTYQUE HERO (TOP) ------------------------------ */}
+      <SnapSection
+        id="triphero"
+        variant="dark"
+        className={[
+          // ✅ plus de "page vide" : rampe = 1 écran (sticky) + 1 écran (spacer)
+          "min-h-[200svh]",
+          // ✅ fond plus foncé, calé sur le bas du triptyque (plus de bleu)
+          "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]",
+        ].join(" ")}
+      >
+        <div className="sticky z-20" style={{ top: 0, height: "100svh" }}>
+          <div className="relative h-full w-full">
+            <div
+              className="relative h-full w-full overflow-hidden"
+              style={{
+                borderRadius: `${tripRadius}px`,
+                boxShadow: `0 40px 140px rgba(0,0,0,${tripShadow})`,
+              }}
+            >
+              <div
+                className="absolute inset-0"
+                style={{ perspective: "1200px", transformStyle: "preserve-3d" }}
+              >
+                <div className="absolute inset-0 flex gap-0">
+                  {/* 1 */}
+                  <div className="relative h-full w-1/3 overflow-hidden">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        transform: `translate3d(${t1X}px, ${t1Y}px, ${t1Z}px) rotate(${t1R}deg)`,
+                        willChange: "transform",
+                      }}
+                    >
+                      <Image
+                        src={TRIP_1}
+                        alt="Triptique 1"
+                        fill
+                        priority
+                        unoptimized
+                        style={{ objectFit: "contain", objectPosition: "top center" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 2 */}
+                  <div className="relative h-full w-1/3 overflow-hidden">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        transform: `translate3d(${t2X}px, ${t2Y}px, ${t2Z}px) rotate(${t2R}deg)`,
+                        willChange: "transform",
+                      }}
+                    >
+                      <Image
+                        src={TRIP_2}
+                        alt="Triptique 2"
+                        fill
+                        priority
+                        unoptimized
+                        style={{ objectFit: "contain", objectPosition: "top center" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3 */}
+                  <div className="relative h-full w-1/3 overflow-hidden">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        transform: `translate3d(${t3X}px, ${t3Y}px, ${t3Z}px) rotate(${t3R}deg)`,
+                        willChange: "transform",
+                      }}
+                    >
+                      <Image
+                        src={TRIP_3}
+                        alt="Triptique 3"
+                        fill
+                        priority
+                        unoptimized
+                        style={{ objectFit: "contain", objectPosition: "top center" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    opacity: 0.10 + t * 0.22,
+                    background:
+                      "linear-gradient(90deg, rgba(255,255,255,0) 33.2%, rgba(255,255,255,.18) 33.35%, rgba(255,255,255,0) 33.5%, rgba(255,255,255,0) 66.5%, rgba(255,255,255,.18) 66.65%, rgba(255,255,255,0) 66.8%)",
+                    mixBlendMode: "overlay",
+                  }}
+                />
+
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.12),rgba(7,18,24,.02),rgba(7,18,24,.55))]" />
+              </div>
+
+              {/* ✅ CTA + Notes collés au triptyque (overlay bas) */}
+<div className="absolute inset-x-0 bottom-12 sm:bottom-34">
+                {/* petit dégradé pour lisibilité */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.75))]" />
+                <div className="relative px-5 pb-6">
+                  <div className="mx-auto max-w-6xl">
+                    <div
+                      id="download"
+                      className="grid scroll-mt-[84px] grid-cols-1 gap-3 sm:grid-cols-2"
+                    >
+                      <DownloadButton href={APP_STORE_URL} store="appstore" />
+                      <DownloadButton href={PLAY_STORE_URL} store="play" />
+                    </div>
+
+                    <GoogleRating />
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
+                Trouve ton prochain partenaire d'entrainement
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ✅ spacer = 1 écran pile -> plus de “page vide” */}
+        <div className="h-[100svh]" />
+      </SnapSection>
+
+      {/* -------------------------------- HERO (texte + appli1) ------------------------------- */}
+      <SnapSection id="hero" variant="dark" className="min-h-[120svh]">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 opacity-90 bg-[radial-gradient(1100px_520px_at_20%_18%,rgba(131,199,177,.22),transparent_60%)]" />
           <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
@@ -437,11 +721,9 @@ export default function Home() {
               <Reveal>
                 <h1 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
                   <span className="block">Trouve des sportifs</span>
-
                   <span className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
                     <span className="leading-none">qui suivent</span>
                     <span className="leading-none text-white/90">ton</span>
-
                     <span className="relative inline-flex items-center leading-none">
                       <Image
                         src="/logo_tempo.svg"
@@ -452,7 +734,6 @@ export default function Home() {
                         priority
                       />
                     </span>
-
                     <span className="leading-none text-white/80">.</span>
                   </span>
                 </h1>
@@ -474,181 +755,181 @@ export default function Home() {
                   pour proposer des rencontres réellement pertinentes.
                 </p>
               </Reveal>
-
-              <Reveal delayMs={220}>
-                <div
-                  id="download"
-                  className="mt-8 grid scroll-mt-[84px] grid-cols-1 gap-3 sm:grid-cols-2"
-                >
-                  <DownloadButton href={APP_STORE_URL} store="appstore" />
-                  <DownloadButton href={PLAY_STORE_URL} store="play" />
-                </div>
-              </Reveal>
-
-              <Reveal delayMs={265}>
-                <a
-                  href={GOOGLE_FORM_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={[
-                    "mt-4 inline-flex w-full items-center justify-between gap-4",
-                    "rounded-2xl border border-white/12 bg-white/7 px-5 py-4",
-                    "shadow-[0_18px_60px_rgba(0,0,0,.18)] backdrop-blur",
-                    "transition hover:-translate-y-0.5 hover:bg-white/9 active:translate-y-0",
-                    "focus:outline-none focus:ring-2 focus:ring-white/30",
-                  ].join(" ")}
-                >
-                  <span className="min-w-0">
-                    <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/60">
-                      Début de Tempo
-                    </span>
-                    <span className="mt-1 block text-sm font-extrabold text-white">
-                      Donne ton avis (1 min) — on construit l’app avec toi
-                    </span>
-                    <span className="mt-1 block text-sm text-white/70">
-                      Aide-nous à comprendre tes attentes.
-                    </span>
-                  </span>
-
-                  <span className="shrink-0 rounded-2xl border border-white/12 bg-white/7 px-3 py-2 text-sm font-extrabold text-white/90">
-                    ↗
-                  </span>
-                </a>
-              </Reveal>
             </div>
 
             <Reveal className="md:justify-self-end" delayMs={160}>
               <div className="relative">
-                <div className="absolute -inset-10 rounded-[44px] bg-[radial-gradient(circle_at_35%_22%,rgba(131,199,177,.22),transparent_62%)] blur-2xl" />
-                <div className="absolute -inset-10 rounded-[44px] bg-[radial-gradient(circle_at_75%_65%,rgba(62,129,190,.18),transparent_62%)] blur-2xl" />
+<div
+  className="relative overflow-hidden"
+  style={{
+    borderRadius: `${heroRadius}px`,
+    transform: `perspective(950px) rotateX(${heroRotateX}deg) rotateY(${heroRotateY}deg) translateX(${heroTranslateX}px) translateY(${heroTranslateY}px) scale(${heroScale})`,
+    transformOrigin: "55% 35%",
+    willChange: "transform, border-radius",
+    // ✅ IMPORTANT : rien d’autre
+  }}
+>
+  <Image
+    src={HERO}
+    alt="Aperçu TEMPO"
+    width={1400}
+    height={1000}
+    className="block h-auto w-full object-cover"
+    priority
+    unoptimized
+  />
+</div>
 
-                <div className="relative overflow-hidden rounded-[44px] border border-white/12 bg-white/5 shadow-[0_30px_120px_rgba(0,0,0,.42)]">
-                  <div className="pointer-events-none absolute inset-0 opacity-40 bg-[linear-gradient(180deg,rgba(255,255,255,.10),transparent_45%)]" />
-                  <Image
-                    src="/appli1.png"
-                    alt="Aperçu TEMPO"
-                    width={1400}
-                    height={1000}
-                    className="h-auto w-full object-cover"
-                    priority
-                    unoptimized
-                  />
-                </div>
+
               </div>
             </Reveal>
           </div>
         </div>
       </SnapSection>
 
-      {/* -------------------------------- IDEAS (light) ------------------------------ */}
-      <SnapSection id="ideas" variant="light">
-        {/* magazine background: très discret */}
-        <div className="pointer-events-none absolute inset-0 opacity-[0.10]">
-          <Image src={S_ATHLE} alt="" fill className="object-cover" />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,18,24,.78),rgba(7,18,24,.40),rgba(7,18,24,.78))]" />
-        </div>
+      {/* -------------------------------- APPLI2 (light) — DÉZOOM ------------------------------ */}
+      <SnapSection id="ideas" variant="light" className="min-h-[200svh]">
+        <div
+          className="sticky z-20"
+          style={{ top: HEADER_H, height: `calc(100svh - ${HEADER_H}px)` }}
+        >
+          <div className="relative h-full w-full">
+            <div
+              className="relative h-full w-full overflow-hidden"
+              style={{
+                borderRadius: `${appRadius}px`,
+                transform: `scale(${appScale})`,
+                transformOrigin: "50% 30%",
+                boxShadow: `0 30px 120px rgba(0,0,0,${appShadowOpacity})`,
+                willChange: "transform, border-radius, box-shadow",
+              }}
+            >
+              <Image
+                src={APP2}
+                alt="Aperçu app"
+                fill
+                className="object-cover"
+                priority
+                unoptimized
+              />
 
-        <div className="mx-auto flex min-h-[calc(100svh-72px)] max-w-6xl flex-col px-5 pb-12 pt-16 md:pt-20">
-          <Reveal>
-            <div className="max-w-3xl">
-              <h2 className="text-3xl font-extrabold text-white">
-                Une app construite pour la compatibilité sportive.
-              </h2>
-              <p className="mt-2 text-sm text-white/80">
-                Le matching s’appuie sur ta pratique et ton rythme pour proposer des
-                rencontres qui ont du sens.
-              </p>
-            </div>
-          </Reveal>
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.25),rgba(7,18,24,.04),rgba(7,18,24,.45))]" />
 
-          {/* ✅ NEW LAYOUT : magazine spread */}
-          <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch">
-            {/* LEFT: big photo + stack */}
-            <Reveal className="lg:col-span-5">
-              <div className="grid h-full grid-cols-2 gap-4">
-                <SportPhoto
-                  src={APP2}
-                  className="col-span-2 min-h-[260px] lg:min-h-[360px]"
-                  priority
-                />
-
-                <SportPhoto src={S_HYROX} className="min-h-[180px]" />
-                <SportPhoto src={S_TENNIS} className="min-h-[180px]" />
-
-                <SportPhoto
-                  src={S_VELO}
-                  className="col-span-2 min-h-[170px] hidden md:block"
-                />
+              <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
+                Communauté sportive engagée
               </div>
-            </Reveal>
 
-            {/* RIGHT: chapters (not rail, not rectangles look) */}
-            <div className="lg:col-span-7">
-              <div className="flex h-full flex-col">
-                <Reveal delayMs={80}>
-                  <div className="grid grid-cols-1 gap-5">
-                    <Chapter
-                      n="01"
-                      title="Des recommandations vraiment sport."
-                      desc="Course, HYROX, cross-training… Tempo comprend ton contexte (niveau, objectifs, habitudes) pour te montrer les bons profils."
-                    />
-                    <Chapter
-                      n="02"
-                      title="Ce qui vous rapproche, au-delà du sport."
-                      desc="Centres d’intérêt, routines, préférences : de quoi démarrer une discussion naturelle."
-                    />
-                    <Chapter
-                      n="03"
-                      title="Communauté & événements."
-                      desc="Rejoins des sessions près de toi, crée des entraînements, progresse en équipe."
-                    />
+              <div className="absolute bottom-6 left-5 right-5">
+                <div className="max-w-xl">
+                  <div className="mt-2 text-[26px] font-extrabold leading-tight text-white md:text-[34px]">
+                    Des événements sportifs près de chez toi
                   </div>
-                </Reveal>
-
-                <Reveal delayMs={170}>
-                  <div className="mt-6">
-                    <TechPanel />
-                  </div>
-                </Reveal>
-
-                <div className="mt-6 text-sm text-white/75">
-                  <button
-                    type="button"
-                    onClick={() => scrollToId("team")}
-                    className="inline-flex items-center gap-2 hover:text-white"
-                  >
-                    Voir l’équipe <span className="opacity-80">↗</span>
-                  </button>
+                  <p className="mt-2 text-sm leading-relaxed text-white/78">
+                    Trouve et rejoins des entraînements adaptés à ton niveau et à ton rythme 
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <div className="h-[120svh]" />
       </SnapSection>
 
-      {/* -------------------------------- TEAM (dark) -------------------------------- */}
-      <SnapSection id="team" variant="dark">
-        <div className="mx-auto flex min-h-[calc(100svh-72px)] max-w-6xl flex-col justify-center px-5 py-12">
-          <Reveal>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-stretch">
-              <div className="md:col-span-5">
-                <div className="relative h-[320px] overflow-hidden rounded-[36px] border border-white/10 bg-white/5 shadow-[0_26px_90px_rgba(0,0,0,.32)] md:h-full">
-                  <Image src={S_ESCALADE} alt="" fill className="object-cover" />
-                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.10),rgba(7,18,24,.70))]" />
-                </div>
+      {/* -------------------------------- HYROX (light) — DÉZOOM ------------------------------ */}
+      <SnapSection id="hyrox" variant="light" className="min-h-[200svh]">
+        <div
+          className="sticky z-20"
+          style={{ top: HEADER_H, height: `calc(100svh - ${HEADER_H}px)` }}
+        >
+          <div className="relative h-full w-full">
+            <div
+              className="relative h-full w-full overflow-hidden"
+              style={{
+                borderRadius: `${hyroxRadius}px`,
+                transform: `scale(${hyroxScale})`,
+                transformOrigin: "50% 30%",
+                boxShadow: `0 30px 120px rgba(0,0,0,${hyroxShadowOpacity})`,
+                willChange: "transform, border-radius, box-shadow",
+              }}
+            >
+              <Image
+                src={HYROX_IMG}
+                alt="HYROX"
+                fill
+                className="object-cover"
+                priority
+                unoptimized
+              />
+
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.22),rgba(7,18,24,.06),rgba(7,18,24,.55))]" />
+
+              <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
+                Une plateforme multisports
               </div>
 
-              <div className="md:col-span-7">
-                <div className="rounded-[36px] border border-white/10 bg-white/6 p-8 shadow-[0_22px_80px_rgba(0,0,0,.22)] backdrop-blur">
-                  <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-                    <div className="md:col-span-2">
-                      <h2 className="text-3xl font-extrabold">L’équipe</h2>
-                      <p className="mt-3 text-sm leading-relaxed text-white/70">
-                        Une app construite par des sportifs pour des sportifs.
-                      </p>
+              <div className="absolute bottom-6 left-5 right-5">
+                <div className="max-w-xl">
+                  <div className="mt-2 text-[26px] font-extrabold leading-tight text-white md:text-[34px]">
+                    Course, vélo, danse, basket, etc.
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-white/78">
+                    Quelque soit ton sport, Tempo est là.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                      <div className="mt-6 flex items-center gap-4">
-                        <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+        <div className="h-[120svh]" />
+      </SnapSection>
+
+      {/* -------------------------------- FEED (light) — DÉZOOM + ENCADRÉ BENJAMIN ------------------------------ */}
+      <SnapSection id="photo" variant="light" className="min-h-[200svh]">
+        <div
+          className="sticky z-20"
+          style={{ top: HEADER_H, height: `calc(100svh - ${HEADER_H}px)` }}
+        >
+          <div className="relative h-full w-full">
+            <div
+              className="relative h-full w-full overflow-hidden"
+              style={{
+                borderRadius: `${photoRadius}px`,
+                transform: `scale(${photoScale})`,
+                transformOrigin: "50% 30%",
+                boxShadow: `0 30px 120px rgba(0,0,0,${photoShadowOpacity})`,
+                willChange: "transform, border-radius, box-shadow",
+              }}
+            >
+              <Image
+                src={PHOTO1}
+                alt="Course"
+                fill
+                className="object-cover"
+                priority
+                unoptimized
+              />
+
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.18),rgba(7,18,24,.06),rgba(7,18,24,.58))]" />
+
+              <div className="absolute left-5 top-5 rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
+                Centres d'intérêt partagés
+              </div>
+
+              <div className="absolute bottom-6 left-5 right-5">
+                <div className="max-w-2xl">
+                  <div className="mt-2 text-[26px] font-extrabold leading-tight text-white md:text-[34px]">
+                    Le partenaire qui TE ressemble.
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-white/78">
+                    Faire du sport à deux, c'est bien. <br /> Faire du sport avec quelqu'un avec qui tu as des centres d'intérêts commun, c'est mieux.
+                  </p>
+
+                  <Reveal delayMs={120}>
+                    <div className="mt-5 w-full max-w-xl rounded-[28px] border border-white/14 bg-white/10 p-5 shadow-[0_22px_80px_rgba(0,0,0,.22)] backdrop-blur">
+                      <div className="flex items-center gap-4">
+                        <div className="relative h-14 w-14 overflow-hidden rounded-2xl border border-white/12 bg-white/10">
                           <Image
                             src="/benjamin.JPEG"
                             alt="Benjamin"
@@ -657,18 +938,24 @@ export default function Home() {
                             priority
                           />
                         </div>
-                        <div>
-                          <div className="text-sm font-bold text-white">Benjamin</div>
-                          <div className="mt-1 text-xs text-white/65">
-                            Créateur • passionné de sport
+
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <div className="text-sm font-extrabold text-white">
+                              Benjamin
+                            </div>
+                            <span className="text-xs text-white/55">•</span>
+                            <div className="text-xs font-semibold text-white/70">
+                              Créateur • passionné de sport
+                            </div>
                           </div>
 
-                          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-white/70">
+                          <div className="mt-1">
                             <a
                               href={INSTAGRAM_BEN_URL}
                               target="_blank"
                               rel="noreferrer"
-                              className="hover:text-white"
+                              className="text-xs font-semibold text-white/75 hover:text-white"
                             >
                               @ben.ontrack ↗
                             </a>
@@ -676,47 +963,44 @@ export default function Home() {
                         </div>
                       </div>
 
-                      <p className="mt-6 text-sm leading-relaxed text-white/75">
-                        “Je passais énormément de temps à m’entraîner et je croisais rarement
-                        des personnes avec le même rythme. Tempo est né de cette idée : un
-                        matching qui comprend réellement ta pratique et ta manière de
-                        t’entraîner.”
+                      <p className="mt-4 text-sm leading-relaxed text-white/78">
+                        “Je passais énormément de temps à m’entraîner et je croisais rarement des
+                        personnes avec le même rythme. Tempo est né de cette idée : un matching
+                        pertinent qui me permet de rencontrer des personnes autant passionnées de sport que moi et qui partagent les mêmes valeurs.”
                       </p>
                     </div>
+                  </Reveal>
 
-                    <div className="md:col-span-2">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="relative h-[150px] overflow-hidden rounded-[26px] border border-white/10 bg-white/5 shadow-[0_28px_90px_rgba(0,0,0,.30)]">
-                          <Image src={S_COURSE1} alt="" fill className="object-cover" />
-                          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.55))]" />
-                        </div>
-                        <div className="relative h-[150px] overflow-hidden rounded-[26px] border border-white/10 bg-white/5 shadow-[0_28px_90px_rgba(0,0,0,.30)]">
-                          <Image src={S_MUSCU} alt="" fill className="object-cover" />
-                          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.55))]" />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="mt-4 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => scrollToId("footer")}
+                      className="rounded-2xl border border-white/14 bg-white/10 px-4 py-2 text-xs font-extrabold text-white/85 backdrop-blur transition hover:bg-white/14"
+                    >
+                      Contact ↘
+                    </button>
+                    <a
+                      href={INSTAGRAM_TEMPO_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-semibold text-white/70 hover:text-white"
+                    >
+                      Voir le compte Tempo ↗
+                    </a>
                   </div>
                 </div>
-
-                <div className="mt-5 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => scrollToId("footer")}
-                    className="text-sm text-white/75 hover:text-white"
-                  >
-                    Contact <span className="opacity-80">↘</span>
-                  </button>
-                </div>
               </div>
+
+              <div className="pointer-events-none absolute inset-0 opacity-[0.22] bg-[radial-gradient(900px_420px_at_50%_10%,rgba(255,255,255,.16),transparent_55%)]" />
             </div>
-          </Reveal>
+          </div>
         </div>
+
+        <div className="h-[120svh]" />
       </SnapSection>
 
       {/* -------------------------------- FOOTER (dark) ------------------------------ */}
-      <SnapSection id="footer" variant="dark">
-        {/* ✅ footer background = course2 */}
+      <SnapSection id="footer" variant="dark" className="min-h-[100svh]">
         <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
           <Image src={S_COURSE2} alt="" fill className="object-cover" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.70),rgba(7,18,24,.90))]" />
@@ -764,7 +1048,7 @@ export default function Home() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    @tempo ↗
+                    @jointhetempo.app ↗
                   </a>
                 </div>
               </div>
@@ -772,17 +1056,17 @@ export default function Home() {
               <div className="flex flex-col gap-3 text-sm">
                 <button
                   type="button"
-                  onClick={() => scrollToId("top")}
+                  onClick={() => scrollToId("triphero")}
                   className="text-left text-white/70 hover:text-white"
                 >
                   Accueil ↗
                 </button>
                 <button
                   type="button"
-                  onClick={() => scrollToId("team")}
+                  onClick={() => scrollToId("ideas")}
                   className="text-left text-white/70 hover:text-white"
                 >
-                  L’équipe ↗
+                  Communauté ↗
                 </button>
                 <button
                   type="button"
