@@ -89,6 +89,7 @@ function Field({
   placeholder,
   type = "password",
   autoComplete,
+  state = "neutral",
 }: {
   label: string;
   value: string;
@@ -96,7 +97,31 @@ function Field({
   placeholder?: string;
   type?: "password" | "text";
   autoComplete?: string;
+  state?: "neutral" | "ok" | "error";
 }) {
+  const skin =
+    state === "ok"
+      ? [
+          // ✅ très visible
+          "border-emerald-300/80 bg-emerald-300/20",
+          "ring-4 ring-emerald-300/25",
+          "shadow-[0_18px_60px_rgba(16,185,129,.18)]",
+          "focus:border-emerald-200 focus:ring-4 focus:ring-emerald-300/35",
+        ].join(" ")
+      : state === "error"
+      ? [
+          // ❌ très visible
+          "border-red-300/80 bg-red-300/15",
+          "ring-4 ring-red-300/20",
+          "shadow-[0_18px_60px_rgba(239,68,68,.16)]",
+          "focus:border-red-200 focus:ring-4 focus:ring-red-300/30",
+        ].join(" ")
+      : [
+          // neutre (style actuel)
+          "border border-white/12 bg-white/7",
+          "focus:border-white/22 focus:ring-2 focus:ring-white/20",
+        ].join(" ");
+
   return (
     <label className="block">
       <div className="mb-2 text-[11px] font-semibold tracking-widest text-white/55">
@@ -110,11 +135,10 @@ function Field({
         autoComplete={autoComplete}
         className={[
           "w-full rounded-2xl px-4 py-3",
-          "border border-white/12 bg-white/7 text-white",
-          "placeholder:text-white/35",
+          "text-white placeholder:text-white/35",
           "shadow-[0_18px_60px_rgba(0,0,0,.16)] backdrop-blur",
           "outline-none transition",
-          "focus:border-white/22 focus:ring-2 focus:ring-white/20",
+          skin,
         ].join(" ")}
       />
     </label>
@@ -307,6 +331,11 @@ export default function ResetPasswordPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // sp est volontairement ignoré (Next SearchParams stable en pratique)
 
+  const confirmState = useMemo<"neutral" | "ok" | "error">(() => {
+    if (!pwd2) return "neutral";
+    return pwd === pwd2 ? "ok" : "error";
+  }, [pwd, pwd2]);
+
   const canSubmit = useMemo(() => {
     if (!supabase) return false;
     if (!hasRecoverySession) return false;
@@ -428,7 +457,22 @@ export default function ResetPasswordPage() {
                             placeholder="Retape ton mot de passe"
                             type="password"
                             autoComplete="new-password"
+                            state={confirmState}
                           />
+                          {pwd2.length > 0 && (
+                            <div
+                              className={[
+                                "mt-2 text-xs font-semibold",
+                                pwd === pwd2
+                                  ? "text-emerald-200/90"
+                                  : "text-red-200/90",
+                              ].join(" ")}
+                            >
+                              {pwd === pwd2
+                                ? "✅ Mots de passe identiques"
+                                : "❌ Les mots de passe ne correspondent pas"}
+                            </div>
+                          )}
                         </Reveal>
 
                         <Reveal delayMs={200}>
@@ -438,7 +482,9 @@ export default function ResetPasswordPage() {
                             </div>
                             <ul className="mt-2 list-disc space-y-1 pl-5">
                               <li>6+ caractères</li>
-                              <li>Majuscules + minuscules + chiffres + caractère spécial</li>
+                              <li>
+                                Majuscules + minuscules + chiffres + caractère spécial
+                              </li>
                               <li>Évite les mots de passe réutilisés</li>
                             </ul>
                           </div>
@@ -454,7 +500,8 @@ export default function ResetPasswordPage() {
                           </PrimaryButton>
 
                           <div className="mt-3 text-center text-xs text-white/45">
-                            Si ça échoue, regénère un email “mot de passe oublié” dans l’app.
+                            Si ça échoue, regénère un email “mot de passe oublié”
+                            dans l’app.
                           </div>
                         </Reveal>
                       </>
