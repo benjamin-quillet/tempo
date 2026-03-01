@@ -89,13 +89,52 @@ function SnapSection({
   );
 }
 
-/* ------------------------------ Premium Buttons ----------------------------- */
+/* ------------------------------ Rating Stars ----------------------------- */
+function Stars({
+  value,
+  outOf = 5,
+  baseClass = "text-white/35",
+  fillClass = "text-amber-300",
+  className = "",
+}: {
+  value: number;
+  outOf?: number;
+  baseClass?: string;
+  fillClass?: string;
+  className?: string;
+}) {
+  const pct = Math.max(0, Math.min(100, (value / outOf) * 100));
+  return (
+    <span className={["relative inline-block leading-none", className].join(" ")}>
+      <span className={baseClass}>{"★★★★★"}</span>
+      <span
+        className={["absolute left-0 top-0 overflow-hidden", fillClass].join(" ")}
+        style={{ width: `${pct}%` }}
+        aria-hidden
+      >
+        {"★★★★★"}
+      </span>
+    </span>
+  );
+}
+
+function formatRatingFR(v: number) {
+  return v.toFixed(1).replace(".", ",");
+}
+
+/* ------------------------------ Premium Buttons (QR style préféré) ----------------------------- */
 function DownloadButton({
   href,
   store,
+  showQr = false,
+  qrHref,
+  ratingValue,
 }: {
   href: string;
   store: "appstore" | "play";
+  showQr?: boolean;
+  qrHref?: string;
+  ratingValue?: number;
 }) {
   const isApp = store === "appstore";
 
@@ -113,6 +152,24 @@ function DownloadButton({
         "shadow-[0_22px_70px_rgba(62,129,190,.22)]",
       ].join(" ");
 
+  const qrSrc = useMemo(() => {
+    if (!showQr || !qrHref) return "";
+    const size = 240;
+    const margin = 16;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=${margin}&data=${encodeURIComponent(
+      qrHref
+    )}`;
+  }, [showQr, qrHref]);
+
+  const ratingTextClass = isApp ? "text-black/70" : "text-white/90";
+  const starsBase = isApp ? "text-black/20" : "text-white/35";
+  const starsFill = isApp ? "text-amber-500" : "text-amber-300";
+
+  // ✅ Assure-toi que ces fichiers existent dans /public :
+  // /public/logo_apple.png et /public/logo_google.png
+  const storeLogoSrc = isApp ? "/logo_apple.png" : "/logo_google.png";
+  const storeLogoAlt = isApp ? "Apple App Store" : "Google Play";
+
   return (
     <a
       href={href}
@@ -128,23 +185,22 @@ function DownloadButton({
     >
       <span className="pointer-events-none absolute inset-[1px] rounded-2xl bg-[linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0))] opacity-45" />
 
-      <span className="relative flex items-center gap-4">
-        <span
-          className={[
-            "relative grid h-10 w-10 place-items-center rounded-xl",
-            "border shadow-[0_16px_40px_rgba(0,0,0,.18)]",
-            isApp ? "border-black/20 bg-white/55" : "border-white/14 bg-white/10",
-          ].join(" ")}
-        >
-          <span
-            className={[
-              "h-2.5 w-2.5 rounded-full",
-              isApp ? "bg-black/60" : "bg-white/75",
-            ].join(" ")}
-          />
-        </span>
+      <span className="relative flex min-w-0 items-center gap-4">
+        {/* ✅ Logo PLUS GROS, sans encadré/fond */}
+<Image
+  src={storeLogoSrc}
+  alt={storeLogoAlt}
+  width={60}
+  height={60}
+  className={[
+    "shrink-0 object-contain",
+    isApp ? "h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16" : "h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12",
+    isApp ? "opacity-90" : "opacity-95",
+  ].join(" ")}
+  priority
+/>
 
-        <span className="flex flex-col leading-tight">
+        <span className="flex min-w-0 flex-col leading-tight">
           <span
             className={[
               "text-[11px] font-semibold uppercase tracking-wider",
@@ -153,14 +209,48 @@ function DownloadButton({
           >
             Télécharger
           </span>
-          <span className="text-sm font-extrabold">
-            {isApp ? "App Store's?" : "Google Play"}
-          </span>
+
+          <span className="text-sm font-extrabold">{isApp ? "App Store" : "Google Play"}</span>
+
+          {/* ✅ Note SOUS le texte (App Store + Google Play) */}
+          {typeof ratingValue === "number" && (
+            <span className="mt-2 flex flex-col gap-1">
+              <span className={["text-xs font-extrabold", ratingTextClass].join(" ")}>
+                {formatRatingFR(ratingValue)}
+              </span>
+              <span className="text-xs leading-none">
+                <Stars value={ratingValue} baseClass={starsBase} fillClass={starsFill} />
+              </span>
+            </span>
+          )}
         </span>
       </span>
 
-      <span className="relative text-sm font-extrabold opacity-80 transition group-hover:opacity-100">
-        ↗
+      {/* ✅ QR dans l’encart App Store (format préféré) */}
+      <span className="relative flex items-center gap-3">
+        {isApp && showQr && qrSrc ? (
+          <span
+            className={[
+              "grid place-items-center rounded-2xl bg-white p-1.5",
+              "shadow-[0_16px_40px_rgba(0,0,0,.18)]",
+            ].join(" ")}
+            aria-hidden
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qrSrc}
+              alt=""
+              width={88}
+              height={88}
+              className="h-[74px] w-[74px] rounded-xl object-contain sm:h-[88px] sm:w-[88px]"
+              loading="lazy"
+            />
+          </span>
+        ) : null}
+
+        <span className="text-sm font-extrabold opacity-80 transition group-hover:opacity-100">
+          ↗
+        </span>
       </span>
 
       <span className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition group-hover:opacity-100 bg-[radial-gradient(900px_240px_at_20%_0%,rgba(255,255,255,.35),transparent_50%)]" />
@@ -168,52 +258,7 @@ function DownloadButton({
   );
 }
 
-/* ------------------------------ Google Rating --------------------------- */
-function Stars({ value, outOf = 5 }: { value: number; outOf?: number }) {
-  const pct = Math.max(0, Math.min(100, (value / outOf) * 100));
-  return (
-    <span className="relative inline-block leading-none">
-      <span className="text-white/35">{"★★★★★"}</span>
-      <span
-        className="absolute left-0 top-0 overflow-hidden text-amber-300"
-        style={{ width: `${pct}%` }}
-        aria-hidden
-      >
-        {"★★★★★"}
-      </span>
-    </span>
-  );
-}
-
-function GoogleRating() {
-  return (
-    <div
-      className={[
-        "mt-3 flex items-center justify-between gap-4",
-        "rounded-2xl border border-white/12 bg-white/7 px-5 py-4",
-        "shadow-[0_18px_60px_rgba(0,0,0,.18)] backdrop-blur",
-      ].join(" ")}
-    >
-      <div className="min-w-0">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-white/60">
-          Notes Google
-        </div>
-        <div className="mt-1 flex items-center gap-3">
-          <div className="text-sm font-extrabold text-white">4.4</div>
-          <div className="text-sm">
-            <Stars value={4.4} />
-          </div>
-        </div>
-      </div>
-
-      <div className="shrink-0 rounded-2xl border border-white/12 bg-white/7 px-3 py-2 text-xs font-extrabold text-white/90">
-        ★ 4.4
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------ Snap Scrolling ------------------------------ */
+/* ------------------------------ Snap Scrolling (fix “Suivant” footer) ------------------------------ */
 function useSnapScroll(sectionIds: string[], headerH: number) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const lockRef = useRef(false);
@@ -222,25 +267,32 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
     const scroller = scrollerRef.current;
     if (!scroller) return;
 
-    const clampIdx = (idx: number) =>
-      Math.max(0, Math.min(sectionIds.length - 1, idx));
+    const clampIdx = (idx: number) => Math.max(0, Math.min(sectionIds.length - 1, idx));
 
     const getTargets = () =>
       sectionIds
         .map((id) => document.getElementById(id) as HTMLElement | null)
         .filter(Boolean) as HTMLElement[];
 
+    const maxScrollTop = () => Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+
     const scrollToIndex = (idx: number) => {
       const clamped = clampIdx(idx);
       const el = document.getElementById(sectionIds[clamped]) as HTMLElement | null;
       if (!el) return;
 
-      const top = el.offsetTop - headerH;
-      scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      const rawTop = el.offsetTop - headerH;
+      const top = Math.min(Math.max(0, rawTop), maxScrollTop());
+      scroller.scrollTo({ top, behavior: "smooth" });
     };
 
     const getNearestIndex = () => {
       const y = scroller.scrollTop;
+      const mx = maxScrollTop();
+
+      // ✅ si on est tout en bas, on force la dernière section (sinon “coince” avant footer)
+      if (mx > 0 && y >= mx - 2) return sectionIds.length - 1;
+
       const targets = getTargets();
       if (!targets.length) return 0;
 
@@ -403,96 +455,58 @@ function rampProgressFor(
   return { progress, h };
 }
 
-function getNearestSectionIndex(
-  scroller: HTMLDivElement | null,
-  ids: string[],
-  headerH: number
-) {
+/** ✅ Index "actif" basé sur le haut de viewport (sous le header) */
+function getActiveSectionIndex(scroller: HTMLDivElement | null, ids: string[], headerH: number) {
   if (!scroller) return 0;
-  const y = scroller.scrollTop;
 
-  let bestIdx = 0;
-  let bestDist = Infinity;
+  const mx = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  if (mx > 0 && scroller.scrollTop >= mx - 2) return ids.length - 1;
 
+  // point de référence = juste sous le header
+  const y = scroller.scrollTop + headerH + 1;
+
+  let idx = 0;
   for (let i = 0; i < ids.length; i++) {
     const el = document.getElementById(ids[i]) as HTMLElement | null;
-    if (!el) continue;
-    const top = el.offsetTop - headerH;
-    const d = Math.abs(y - top);
-    if (d < bestDist) {
-      bestDist = d;
-      bestIdx = i;
-    }
+    if (el && el.offsetTop <= y) idx = i;
   }
-  return Math.max(0, Math.min(ids.length - 1, bestIdx));
+  return idx;
 }
 
-/**
- * ✅ NEW SectionCaption:
- * - kicker supprimé
- * - title + subtitle dans un "glass" translucide léger (lisible sur image)
- */
-function SectionCaption({
-  title,
-  subtitle,
-  position = "auto",
-  liftClass = "",
-}: {
-  title: string;
-  subtitle: React.ReactNode;
-  position?: "auto" | "top";
-  liftClass?: string;
-}) {
-  return (
-    <div
-      className={[
-        "absolute left-5 right-5",
-        position === "top"
-          ? "top-[calc(env(safe-area-inset-top)+72px)] sm:top-[calc(env(safe-area-inset-top)+88px)]"
-          : "top-[calc(env(safe-area-inset-top)+72px)] sm:top-auto sm:bottom-16",
-        "transform-gpu",
-        liftClass,
-      ].join(" ")}
-    >
-      <div className="relative max-w-2xl">
-        {/* ✅ glass panel */}
-        <div
-          className={[
-            "rounded-3xl border border-white/14 bg-white/10 backdrop-blur",
-            "px-4 py-4 sm:px-5 sm:py-5",
-            "shadow-[0_22px_70px_rgba(0,0,0,.22)]",
-          ].join(" ")}
-        >
-          {/* micro highlight subtil (donne du contraste sans 'gros bloc') */}
-          <div className="pointer-events-none absolute inset-[1px] rounded-3xl bg-[linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0))] opacity-60" />
+function cardMotion(progress: number, flipX = false) {
+  const t = easeOutCubic(progress);
+  const scale = 1.2 - t * 0.26;
+  const rotateX = 18 - t * 18;
+  const rotateYBase = -26 + t * 26;
+  const translateY = t * 62;
+  const translateXBase = t * -78;
+  const radius = 72 - t * 46;
 
-          <div className="relative">
-            <div className="text-[22px] font-extrabold leading-tight text-white sm:text-[30px] md:text-[34px]">
-              {title}
-            </div>
+  const rotateY = flipX ? -rotateYBase : rotateYBase;
+  const translateX = flipX ? -translateXBase : translateXBase;
 
-            <div className="mt-2 text-sm leading-relaxed text-white/90 sm:text-sm">
-              {subtitle}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return { scale, rotateX, rotateY, translateX, translateY, radius };
 }
 
 /* ---------------------------------- Page ---------------------------------- */
 export default function Home() {
-  const APP_STORE_URL = "#";
+  const APP_STORE_URL =
+    "https://apps.apple.com/fr/app/tempo-partenaires-sportifs/id6758254738";
+
+  // ⚠️ Mets ici ton vrai lien Google Play quand tu l’as
   const PLAY_STORE_URL = "#";
 
+  // ⚠️ Remplace ces valeurs par les notes exactes App Store / Google Play
+  const APP_STORE_RATING = 4.8;
+  const PLAY_STORE_RATING = 4.4;
+
   const INSTAGRAM_TEMPO_URL = "https://www.instagram.com/jointhetempo.app/";
-  const INSTAGRAM_BEN_URL = "https://instagram.com/ben.ontrack";
   const CONTACT_EMAIL = "contact@jointhetempo.app";
 
   const HEADER_H = 72;
 
-  const sections = ["triphero", "hero", "ideas", "hyrox", "photo", "team", "footer"];
+  // ✅ IMPORTANT : stabiliser l'array pour éviter de ré-installer les listeners à chaque render
+  const sections = useMemo(() => ["triphero", "hero", "ideas", "hyrox", "footer"], []);
   const scrollerRef = useSnapScroll(sections, HEADER_H);
 
   const getEl = (id: string) => {
@@ -505,15 +519,18 @@ export default function Home() {
     if (!scroller) return;
     const el = document.getElementById(id) as HTMLElement | null;
     if (!el) return;
-    const top = el.offsetTop - HEADER_H;
-    scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+    const rawTop = el.offsetTop - HEADER_H;
+    const maxTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const top = Math.min(Math.max(0, rawTop), maxTop);
+
+    scroller.scrollTo({ top, behavior: "smooth" });
   };
 
   // images
-  const HERO = "/appli1.png";
-  const APP2 = "/appli2.png";
-  const PHOTO1 = "/sports/course1.jpg";
-  const HYROX_IMG = "/sports/hyrox1.jpg";
+  const HERO = "/Images_store_2.jpeg"; // page 2
+  const STORE_3 = "/Images_store_3.jpeg"; // page 3
+  const STORE_4 = "/Images_store_4.jpeg"; // page 4
   const S_COURSE2 = "/sports/course2.jpg";
 
   // Triptyque
@@ -546,10 +563,11 @@ export default function Home() {
     };
   }, [scrollerRef]);
 
+  // ✅ FIX : utiliser l'index "actif" (pas "nearest") pour ne pas disable trop tôt sur des sections > 100vh
   const currentIdx = useMemo(() => {
     if (typeof window === "undefined") return 0;
-    return getNearestSectionIndex(scrollerRef.current, sections, HEADER_H);
-  }, [scrollTop, scrollerRef]);
+    return getActiveSectionIndex(scrollerRef.current, sections, HEADER_H);
+  }, [scrollTop, scrollerRef, sections]);
 
   const goPrev = () => {
     const idx = Math.max(0, currentIdx - 1);
@@ -562,7 +580,7 @@ export default function Home() {
   };
 
   /* ========================================================================== */
-  // Trip HERO ramp (iOS-friendly)
+  // Trip HERO ramp
   const tripHeroRamp = useMemo(() => {
     const scroller = scrollerRef.current;
     const el = getEl("triphero");
@@ -597,51 +615,23 @@ export default function Home() {
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
-  const heroP = heroRamp.progress;
-  const heroT = easeOutCubic(heroP);
+  const heroMotion = useMemo(() => cardMotion(heroRamp.progress, false), [heroRamp.progress]);
 
-  const heroScale = 1.2 - heroT * 0.26;
-  const heroRotateX = 18 - heroT * 18;
-  const heroRotateY = -26 + heroT * 26;
-  const heroTranslateY = heroT * 62;
-  const heroTranslateX = heroT * -78;
-  const heroRadius = 72 - heroT * 46;
-
-  /* ========================================================================== */
-  const appRamp = useMemo(() => {
+  const ideasRamp = useMemo(() => {
     const scroller = scrollerRef.current;
     const el = getEl("ideas");
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
-  const appP = appRamp.progress;
-  const appScale = 1 - appP * 0.18;
-  const appRadius = appP * 34;
-  const appShadowOpacity = appP * 0.35;
+  const ideasMotion = useMemo(() => cardMotion(ideasRamp.progress, true), [ideasRamp.progress]);
 
-  /* ========================================================================== */
   const hyroxRamp = useMemo(() => {
     const scroller = scrollerRef.current;
     const el = getEl("hyrox");
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
-  const hyroxP = hyroxRamp.progress;
-  const hyroxScale = 1 - hyroxP * 0.18;
-  const hyroxRadius = hyroxP * 34;
-  const hyroxShadowOpacity = hyroxP * 0.35;
-
-  /* ========================================================================== */
-  const photoRamp = useMemo(() => {
-    const scroller = scrollerRef.current;
-    const el = getEl("photo");
-    return rampProgressFor(scroller, el, scrollTop, HEADER_H);
-  }, [scrollTop, scrollerRef]);
-
-  const photoP = photoRamp.progress;
-  const photoScale = 1 - photoP * 0.18;
-  const photoRadius = photoP * 34;
-  const photoShadowOpacity = photoP * 0.35;
+  const hyroxMotion = useMemo(() => cardMotion(hyroxRamp.progress, false), [hyroxRamp.progress]);
 
   return (
     <div
@@ -675,43 +665,21 @@ export default function Home() {
             </div>
 
             <div className="relative h-6 w-[92px] opacity-95">
-              <Image
-                src="/logo_tempo.svg"
-                alt="TEMPO"
-                fill
-                className="object-contain"
-                priority
-              />
+              <Image src="/logo_tempo.svg" alt="TEMPO" fill className="object-contain" priority />
             </div>
           </button>
 
           <nav className="hidden items-center gap-6 text-sm text-white/70 md:flex">
-            <button
-              type="button"
-              onClick={() => scrollToId("hero")}
-              className="hover:text-white"
-            >
+            <button type="button" onClick={() => scrollToId("hero")} className="hover:text-white">
               L’app
             </button>
-            <button
-              type="button"
-              onClick={() => scrollToId("ideas")}
-              className="hover:text-white"
-            >
-              Communauté
+            <button type="button" onClick={() => scrollToId("ideas")} className="hover:text-white">
+              Événements
             </button>
-            <button
-              type="button"
-              onClick={() => scrollToId("team")}
-              className="hover:text-white"
-            >
-              L’équipe
+            <button type="button" onClick={() => scrollToId("hyrox")} className="hover:text-white">
+              Partenaires
             </button>
-            <button
-              type="button"
-              onClick={() => scrollToId("footer")}
-              className="hover:text-white"
-            >
+            <button type="button" onClick={() => scrollToId("footer")} className="hover:text-white">
               Contact
             </button>
           </nav>
@@ -737,7 +705,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ✅ NAV “Suivant / Précédent” (aide au scroll) */}
+      {/* NAV “Suivant / Précédent” */}
       <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[60]">
         <div className="mx-auto flex max-w-6xl items-center justify-center px-5">
           <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/12 bg-white/10 px-2 py-2 shadow-[0_18px_60px_rgba(0,0,0,.28)] backdrop-blur">
@@ -774,7 +742,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* -------------------------------- TRIPTYQUE HERO (TOP) — iOS OK ------------------------------ */}
+      {/* -------------------------------- PAGE 1 : TRIPTYQUE HERO ------------------------------ */}
       <SnapSection
         id="triphero"
         variant="dark"
@@ -783,7 +751,6 @@ export default function Home() {
           "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]",
         ].join(" ")}
       >
-        {/* ✅ background photo (course2) comme le footer */}
         <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
           <Image src={S_COURSE2} alt="" fill className="object-cover" priority />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.72),rgba(7,18,24,.92))]" />
@@ -803,7 +770,6 @@ export default function Home() {
                 style={{ perspective: "1200px", transformStyle: "preserve-3d" }}
               >
                 <div className="absolute inset-0 flex gap-0">
-                  {/* 1 */}
                   <div className="relative h-full w-1/3 overflow-hidden">
                     <div
                       className="absolute inset-0"
@@ -823,7 +789,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* 2 */}
                   <div className="relative h-full w-1/3 overflow-hidden">
                     <div
                       className="absolute inset-0"
@@ -843,7 +808,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* 3 */}
                   <div className="relative h-full w-1/3 overflow-hidden">
                     <div
                       className="absolute inset-0"
@@ -877,7 +841,7 @@ export default function Home() {
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.12),rgba(7,18,24,.02),rgba(7,18,24,.55))]" />
               </div>
 
-              {/* ✅ CTA + Notes collés au triptyque (overlay bas) */}
+              {/* ✅ 2 BOX UNIQUEMENT (App Store / Google Play) */}
               <div className="absolute inset-x-0 bottom-10 sm:bottom-24">
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.75))]" />
                 <div className="relative px-5 pb-6">
@@ -889,18 +853,23 @@ export default function Home() {
                         "translate-y-[-36px] sm:translate-y-0",
                       ].join(" ")}
                     >
-                      <DownloadButton href={APP_STORE_URL} store="appstore" />
-                      <DownloadButton href={PLAY_STORE_URL} store="play" />
-                    </div>
-
-                    <div className="translate-y-[-28px] sm:translate-y-0">
-                      <GoogleRating />
+                      <DownloadButton
+                        href={APP_STORE_URL}
+                        store="appstore"
+                        showQr
+                        qrHref={APP_STORE_URL}
+                        ratingValue={APP_STORE_RATING}
+                      />
+                      <DownloadButton
+                        href={PLAY_STORE_URL}
+                        store="play"
+                        ratingValue={PLAY_STORE_RATING}
+                      />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Badge */}
               <div
                 className={[
                   "absolute left-4 sm:left-5",
@@ -919,11 +888,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* spacer */}
         <div className="h-svh" />
       </SnapSection>
 
-      {/* -------------------------------- HERO (texte + appli1) ------------------------------- */}
+      {/* -------------------------------- PAGE 2 : HERO ------------------------------- */}
       <SnapSection id="hero" variant="dark" className="min-h-[120svh]">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 opacity-90 bg-[radial-gradient(1100px_520px_at_20%_18%,rgba(131,199,177,.22),transparent_60%)]" />
@@ -960,9 +928,7 @@ export default function Home() {
               <Reveal delayMs={130}>
                 <p className="mt-7 max-w-xl text-base leading-relaxed text-white/78">
                   Tempo repose sur un{" "}
-                  <span className="font-semibold text-white">
-                    algorithme de matching avancé
-                  </span>{" "}
+                  <span className="font-semibold text-white">algorithme de matching avancé</span>{" "}
                   conçu pour le sport : il combine ta{" "}
                   <span className="font-semibold text-white">pratique</span>, ton{" "}
                   <span className="font-semibold text-white">rythme</span>, tes{" "}
@@ -980,8 +946,8 @@ export default function Home() {
                 <div
                   className="relative overflow-hidden"
                   style={{
-                    borderRadius: `${heroRadius}px`,
-                    transform: `perspective(950px) rotateX(${heroRotateX}deg) rotateY(${heroRotateY}deg) translateX(${heroTranslateX}px) translateY(${heroTranslateY}px) scale(${heroScale})`,
+                    borderRadius: `${heroMotion.radius}px`,
+                    transform: `perspective(950px) rotateX(${heroMotion.rotateX}deg) rotateY(${heroMotion.rotateY}deg) translateX(${heroMotion.translateX}px) translateY(${heroMotion.translateY}px) scale(${heroMotion.scale})`,
                     transformOrigin: "55% 35%",
                     willChange: "transform, border-radius",
                   }}
@@ -1002,230 +968,111 @@ export default function Home() {
         </div>
       </SnapSection>
 
-      {/* -------------------------------- APPLI2 (light) — DÉZOOM ------------------------------ */}
-      <SnapSection id="ideas" variant="light" className="min-h-[200svh]">
+      {/* -------------------------------- PAGE 3 : store_3 (image à gauche) ------------------------------- */}
+      <SnapSection id="ideas" variant="dark" className="min-h-[120svh]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(1100px_520px_at_20%_18%,rgba(131,199,177,.22),transparent_60%)]" />
+          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
+        </div>
+
         <div
-          className="sticky z-20"
-          style={{ top: HEADER_H, height: `calc(100svh - ${HEADER_H}px)` }}
+          className="mx-auto flex max-w-6xl items-center px-5 pb-10"
+          style={{ paddingTop: HEADER_H }}
         >
-          <div className="relative h-full w-full">
-            <div
-              className="relative h-full w-full overflow-hidden"
-              style={{
-                borderRadius: `${appRadius}px`,
-                transform: `scale(${appScale})`,
-                transformOrigin: "50% 30%",
-                boxShadow: `0 30px 120px rgba(0,0,0,${appShadowOpacity})`,
-                willChange: "transform, border-radius, box-shadow",
-              }}
-            >
-              <Image
-                src={APP2}
-                alt="Aperçu app"
-                fill
-                className="object-cover"
-                priority
-                unoptimized
-              />
-
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.25),rgba(7,18,24,.04),rgba(7,18,24,.45))]" />
-
-              {/* ✅ kicker supprimé + glass */}
-              <SectionCaption
-                title="Des événements sportifs près de chez toi"
-                liftClass="-translate-y-10 sm:-translate-y-6"
-                subtitle={
-                  <>Trouve et rejoins des entraînements adaptés à ton niveau et à ton rythme.</>
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="h-[120svh]" />
-      </SnapSection>
-
-      {/* -------------------------------- HYROX (light) — DÉZOOM ------------------------------ */}
-      <SnapSection id="hyrox" variant="light" className="min-h-[200svh]">
-        <div
-          className="sticky z-20"
-          style={{ top: HEADER_H, height: `calc(100svh - ${HEADER_H}px)` }}
-        >
-          <div className="relative h-full w-full">
-            <div
-              className="relative h-full w-full overflow-hidden"
-              style={{
-                borderRadius: `${hyroxRadius}px`,
-                transform: `scale(${hyroxScale})`,
-                transformOrigin: "50% 30%",
-                boxShadow: `0 30px 120px rgba(0,0,0,${hyroxShadowOpacity})`,
-                willChange: "transform, border-radius, box-shadow",
-              }}
-            >
-              <Image
-                src={HYROX_IMG}
-                alt="HYROX"
-                fill
-                className="object-cover"
-                priority
-                unoptimized
-              />
-
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.22),rgba(7,18,24,.06),rgba(7,18,24,.55))]" />
-
-              {/* ✅ kicker supprimé + glass */}
-              <SectionCaption
-                title="Course, vélo, danse, basket, etc."
-                liftClass="-translate-y-10 sm:-translate-y-6"
-                subtitle={<>Quelque soit ton sport, Tempo est là.</>}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="h-[120svh]" />
-      </SnapSection>
-
-      {/* -------------------------------- FEED (light) — DÉZOOM ------------------------------ */}
-      <SnapSection id="photo" variant="light" className="min-h-[200svh]">
-        <div
-          className="sticky z-20"
-          style={{ top: HEADER_H, height: `calc(100svh - ${HEADER_H}px)` }}
-        >
-          <div className="relative h-full w-full">
-            <div
-              className="relative h-full w-full overflow-hidden"
-              style={{
-                borderRadius: `${photoRadius}px`,
-                transform: `scale(${photoScale})`,
-                transformOrigin: "50% 30%",
-                boxShadow: `0 30px 120px rgba(0,0,0,${photoShadowOpacity})`,
-                willChange: "transform, border-radius, box-shadow",
-              }}
-            >
-              <Image
-                src={PHOTO1}
-                alt="Course"
-                fill
-                className="object-cover"
-                priority
-                unoptimized
-              />
-
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.18),rgba(7,18,24,.06),rgba(7,18,24,.58))]" />
-
-              {/* ✅ kicker supprimé + glass */}
-              <SectionCaption
-                title="Le partenaire qui te ressemble."
-                liftClass="-translate-y-10 sm:-translate-y-6"
-                subtitle={
-                  <>
-                    Faire du sport à deux, c&apos;est bien.
-                    <br />
-                    Faire du sport avec quelqu&apos;un avec qui tu as des centres d&apos;intérêts
-                    commun, c&apos;est mieux.
-                  </>
-                }
-              />
-
-              <div className="pointer-events-none absolute inset-0 opacity-[0.22] bg-[radial-gradient(900px_420px_at_50%_10%,rgba(255,255,255,.16),transparent_55%)]" />
-            </div>
-          </div>
-        </div>
-
-        <div className="h-[120svh]" />
-      </SnapSection>
-
-      {/* -------------------------------- TEAM (PAGE DÉDIÉE) ------------------------------ */}
-      <SnapSection id="team" variant="dark" className="min-h-svh">
-        <div className="pointer-events-none absolute inset-0 opacity-[0.22]">
-          <div className="absolute inset-0 bg-[radial-gradient(1000px_520px_at_18%_22%,rgba(131,199,177,.22),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(980px_520px_at_74%_45%,rgba(62,129,190,.18),transparent_60%)]" />
-        </div>
-
-        <div className="mx-auto flex min-h-[calc(100svh-72px)] max-w-6xl items-center px-5 py-12">
           <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-            <div>
-              <Reveal>
-                <div className="inline-flex w-fit rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/90 backdrop-blur">
-                  À propos
+            <Reveal className="md:justify-self-start" delayMs={140}>
+              <div className="relative">
+                <div
+                  className="relative overflow-hidden"
+                  style={{
+                    borderRadius: `${ideasMotion.radius}px`,
+                    transform: `perspective(950px) rotateX(${ideasMotion.rotateX}deg) rotateY(${ideasMotion.rotateY}deg) translateX(${ideasMotion.translateX}px) translateY(${ideasMotion.translateY}px) scale(${ideasMotion.scale})`,
+                    transformOrigin: "45% 35%",
+                    willChange: "transform, border-radius",
+                  }}
+                >
+                  <Image
+                    src={STORE_3}
+                    alt="Événements TEMPO"
+                    width={1400}
+                    height={1000}
+                    className="block h-auto w-full object-cover"
+                    priority
+                    unoptimized
+                  />
                 </div>
-                <h2 className="mt-5 text-[30px] font-extrabold leading-[1.05] text-white sm:text-[38px] md:text-[46px]">
-                  TEMPO est né d’un besoin concret
+              </div>
+            </Reveal>
+
+            <div className="relative">
+              <Reveal>
+                <h2 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
+                  <span className="block">Un lieu.</span>
+                  <span className="block text-white/90">Une date.</span>
                 </h2>
               </Reveal>
 
-              <Reveal delayMs={120}>
-                <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/72 sm:text-base">
-                  Rendre les rencontres dans le milieu du sport plus pertinentes.
+              <Reveal delayMs={130}>
+                <p className="mt-7 max-w-xl text-base leading-relaxed text-white/78">
+                  Crée ou rejoins un{" "}
+                  <span className="font-semibold text-white">événement sportif</span>{" "}
+                  près de chez toi, et trouve des partenaires qui partagent ton rythme.
                 </p>
               </Reveal>
+            </div>
+          </div>
+        </div>
+      </SnapSection>
 
-              <Reveal delayMs={180}>
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => scrollToId("download")}
-                    className="rounded-2xl border border-white/14 bg-white/10 px-4 py-2 text-xs font-extrabold text-white/85 backdrop-blur transition hover:bg-white/14"
-                  >
-                    Télécharger ↗
-                  </button>
-                </div>
+      {/* -------------------------------- PAGE 4 : store_4 ------------------------------- */}
+      <SnapSection id="hyrox" variant="dark" className="min-h-[120svh]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(1100px_520px_at_20%_18%,rgba(131,199,177,.22),transparent_60%)]" />
+          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
+        </div>
+
+        <div
+          className="mx-auto flex max-w-6xl items-center px-5 pb-10"
+          style={{ paddingTop: HEADER_H }}
+        >
+          <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
+            <div className="relative">
+              <Reveal>
+                <h2 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
+                  <span className="block">Un match.</span>
+                  <span className="block text-white/90">Un partenaire.</span>
+                </h2>
+              </Reveal>
+
+              <Reveal delayMs={130}>
+                <p className="mt-7 max-w-xl text-base leading-relaxed text-white/78">
+                  Discute, propose une session et{" "}
+                  <span className="font-semibold text-white">planifie</span> ta prochaine sortie en
+                  quelques clics.
+                </p>
               </Reveal>
             </div>
 
-            <Reveal className="md:justify-self-end" delayMs={140}>
-              <div className="w-full max-w-[520px]">
-                <div className="rounded-[30px] border border-white/14 bg-white/8 p-6 shadow-[0_26px_90px_rgba(0,0,0,.28)] backdrop-blur">
-                  <div className="flex items-center gap-4">
-                    <div className="relative h-14 w-14 overflow-hidden rounded-2xl border border-white/12 bg-white/10">
-                      <Image
-                        src="/benjamin.JPEG"
-                        alt="Benjamin"
-                        fill
-                        className="object-cover"
-                        priority
-                      />
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <div className="text-sm font-extrabold text-white">Benjamin</div>
-                        <span className="text-xs text-white/55">•</span>
-                        <div className="text-xs font-semibold text-white/70">
-                          Créateur • passionné de sport
-                        </div>
-                      </div>
-
-                      <div className="mt-1">
-                        <a
-                          href={INSTAGRAM_BEN_URL}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs font-semibold text-white/75 hover:text-white"
-                        >
-                          @ben.ontrack ↗
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 text-sm font-extrabold text-white">L’équipe TEMPO</div>
-                  <div className="mt-2 text-xs leading-relaxed text-white/70">
-                    “Je passais énormément de temps à m’entraîner et je croisais rarement des
-                    personnes avec le même rythme. Tempo est né de cette idée : un matching
-                    pertinent pour rencontrer des sportifs passionnés, avec les mêmes valeurs.”
-                  </div>
-
-                  <div className="mt-5 text-xs leading-relaxed text-white/60">
-                    Une question ?{" "}
-                    <a
-                      className="font-semibold text-white hover:underline"
-                      href={`mailto:${CONTACT_EMAIL}`}
-                    >
-                      {CONTACT_EMAIL}
-                    </a>
-                  </div>
+            <Reveal className="md:justify-self-end" delayMs={160}>
+              <div className="relative">
+                <div
+                  className="relative overflow-hidden"
+                  style={{
+                    borderRadius: `${hyroxMotion.radius}px`,
+                    transform: `perspective(950px) rotateX(${hyroxMotion.rotateX}deg) rotateY(${hyroxMotion.rotateY}deg) translateX(${hyroxMotion.translateX}px) translateY(${hyroxMotion.translateY}px) scale(${hyroxMotion.scale})`,
+                    transformOrigin: "55% 35%",
+                    willChange: "transform, border-radius",
+                  }}
+                >
+                  <Image
+                    src={STORE_4}
+                    alt="Partenaires TEMPO"
+                    width={1400}
+                    height={1000}
+                    className="block h-auto w-full object-cover"
+                    priority
+                    unoptimized
+                  />
                 </div>
               </div>
             </Reveal>
@@ -1233,7 +1080,7 @@ export default function Home() {
         </div>
       </SnapSection>
 
-      {/* -------------------------------- FOOTER (dark) ------------------------------ */}
+      {/* -------------------------------- FOOTER ------------------------------ */}
       <SnapSection id="footer" variant="dark" className="min-h-svh">
         <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
           <Image src={S_COURSE2} alt="" fill className="object-cover" />
@@ -1246,30 +1093,17 @@ export default function Home() {
               <div>
                 <div className="flex items-center gap-3">
                   <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                    <Image
-                      src="/favicon_tempo.svg"
-                      alt="TEMPO"
-                      fill
-                      className="object-contain p-2"
-                    />
+                    <Image src="/favicon_tempo.svg" alt="TEMPO" fill className="object-contain p-2" />
                   </div>
 
                   <div className="relative h-6 w-[104px] opacity-95">
-                    <Image
-                      src="/logo_tempo.svg"
-                      alt="TEMPO"
-                      fill
-                      className="object-contain"
-                    />
+                    <Image src="/logo_tempo.svg" alt="TEMPO" fill className="object-contain" />
                   </div>
                 </div>
 
                 <div className="mt-6 text-sm text-white/70">
                   Contact :{" "}
-                  <a
-                    className="font-semibold text-white hover:underline"
-                    href={`mailto:${CONTACT_EMAIL}`}
-                  >
+                  <a className="font-semibold text-white hover:underline" href={`mailto:${CONTACT_EMAIL}`}>
                     {CONTACT_EMAIL}
                   </a>
                 </div>
@@ -1297,17 +1131,24 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => scrollToId("ideas")}
+                  onClick={() => scrollToId("hero")}
                   className="text-left text-white/70 hover:text-white"
                 >
-                  Communauté ↗
+                  L’app ↗
                 </button>
                 <button
                   type="button"
-                  onClick={() => scrollToId("team")}
+                  onClick={() => scrollToId("ideas")}
                   className="text-left text-white/70 hover:text-white"
                 >
-                  L’équipe ↗
+                  Événements ↗
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToId("hyrox")}
+                  className="text-left text-white/70 hover:text-white"
+                >
+                  Partenaires ↗
                 </button>
                 <button
                   type="button"
