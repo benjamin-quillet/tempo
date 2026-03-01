@@ -165,8 +165,6 @@ function DownloadButton({
   const starsBase = isApp ? "text-black/20" : "text-white/35";
   const starsFill = isApp ? "text-amber-500" : "text-amber-300";
 
-  // ✅ Assure-toi que ces fichiers existent dans /public :
-  // /public/logo_apple.png et /public/logo_google.png
   const storeLogoSrc = isApp ? "/logo_apple.png" : "/logo_google.png";
   const storeLogoAlt = isApp ? "Apple App Store" : "Google Play";
 
@@ -186,19 +184,20 @@ function DownloadButton({
       <span className="pointer-events-none absolute inset-[1px] rounded-2xl bg-[linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0))] opacity-45" />
 
       <span className="relative flex min-w-0 items-center gap-4">
-        {/* ✅ Logo PLUS GROS, sans encadré/fond */}
-<Image
-  src={storeLogoSrc}
-  alt={storeLogoAlt}
-  width={60}
-  height={60}
-  className={[
-    "shrink-0 object-contain",
-    isApp ? "h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16" : "h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12",
-    isApp ? "opacity-90" : "opacity-95",
-  ].join(" ")}
-  priority
-/>
+        <Image
+          src={storeLogoSrc}
+          alt={storeLogoAlt}
+          width={60}
+          height={60}
+          className={[
+            "shrink-0 object-contain",
+            isApp
+              ? "h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16"
+              : "h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12",
+            isApp ? "opacity-90" : "opacity-95",
+          ].join(" ")}
+          priority
+        />
 
         <span className="flex min-w-0 flex-col leading-tight">
           <span
@@ -212,7 +211,6 @@ function DownloadButton({
 
           <span className="text-sm font-extrabold">{isApp ? "App Store" : "Google Play"}</span>
 
-          {/* ✅ Note SOUS le texte (App Store + Google Play) */}
           {typeof ratingValue === "number" && (
             <span className="mt-2 flex flex-col gap-1">
               <span className={["text-xs font-extrabold", ratingTextClass].join(" ")}>
@@ -226,7 +224,6 @@ function DownloadButton({
         </span>
       </span>
 
-      {/* ✅ QR dans l’encart App Store (format préféré) */}
       <span className="relative flex items-center gap-3">
         {isApp && showQr && qrSrc ? (
           <span
@@ -290,7 +287,6 @@ function useSnapScroll(sectionIds: string[], headerH: number) {
       const y = scroller.scrollTop;
       const mx = maxScrollTop();
 
-      // ✅ si on est tout en bas, on force la dernière section (sinon “coince” avant footer)
       if (mx > 0 && y >= mx - 2) return sectionIds.length - 1;
 
       const targets = getTargets();
@@ -462,7 +458,6 @@ function getActiveSectionIndex(scroller: HTMLDivElement | null, ids: string[], h
   const mx = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
   if (mx > 0 && scroller.scrollTop >= mx - 2) return ids.length - 1;
 
-  // point de référence = juste sous le header
   const y = scroller.scrollTop + headerH + 1;
 
   let idx = 0;
@@ -488,15 +483,28 @@ function cardMotion(progress: number, flipX = false) {
   return { scale, rotateX, rotateY, translateX, translateY, radius };
 }
 
+/* ------------------------------ Media Query (disable transforms mobile) ----------------------------- */
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setMatches(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [query]);
+
+  return matches;
+}
+
 /* ---------------------------------- Page ---------------------------------- */
 export default function Home() {
   const APP_STORE_URL =
     "https://apps.apple.com/fr/app/tempo-partenaires-sportifs/id6758254738";
 
-  // ⚠️ Mets ici ton vrai lien Google Play quand tu l’as
   const PLAY_STORE_URL = "#";
 
-  // ⚠️ Remplace ces valeurs par les notes exactes App Store / Google Play
   const APP_STORE_RATING = 4.8;
   const PLAY_STORE_RATING = 4.4;
 
@@ -505,7 +513,9 @@ export default function Home() {
 
   const HEADER_H = 72;
 
-  // ✅ IMPORTANT : stabiliser l'array pour éviter de ré-installer les listeners à chaque render
+  // ✅ Desktop/tablette (>= md) : on garde les transforms. Mobile : on les coupe.
+  const isMdUp = useMediaQuery("(min-width: 768px)");
+
   const sections = useMemo(() => ["triphero", "hero", "ideas", "hyrox", "footer"], []);
   const scrollerRef = useSnapScroll(sections, HEADER_H);
 
@@ -528,9 +538,9 @@ export default function Home() {
   };
 
   // images
-  const HERO = "/Images_store_2.jpeg"; // page 2
-  const STORE_3 = "/Images_store_3.jpeg"; // page 3
-  const STORE_4 = "/Images_store_4.jpeg"; // page 4
+  const HERO = "/Images_store_2.jpeg";
+  const STORE_3 = "/Images_store_3.jpeg";
+  const STORE_4 = "/Images_store_4.jpeg";
   const S_COURSE2 = "/sports/course2.jpg";
 
   // Triptyque
@@ -563,7 +573,6 @@ export default function Home() {
     };
   }, [scrollerRef]);
 
-  // ✅ FIX : utiliser l'index "actif" (pas "nearest") pour ne pas disable trop tôt sur des sections > 100vh
   const currentIdx = useMemo(() => {
     if (typeof window === "undefined") return 0;
     return getActiveSectionIndex(scrollerRef.current, sections, HEADER_H);
@@ -623,7 +632,8 @@ export default function Home() {
     return rampProgressFor(scroller, el, scrollTop, HEADER_H);
   }, [scrollTop, scrollerRef]);
 
-  const ideasMotion = useMemo(() => cardMotion(ideasRamp.progress, true), [ideasRamp.progress]);
+  // ✅ Page 3 : image à droite => même sens que page 2/4 (pas de flipX)
+  const ideasMotion = useMemo(() => cardMotion(ideasRamp.progress, false), [ideasRamp.progress]);
 
   const hyroxRamp = useMemo(() => {
     const scroller = scrollerRef.current;
@@ -632,6 +642,46 @@ export default function Home() {
   }, [scrollTop, scrollerRef]);
 
   const hyroxMotion = useMemo(() => cardMotion(hyroxRamp.progress, false), [hyroxRamp.progress]);
+
+  // ✅ Styles : transforms ON uniquement >= md
+  const heroCardStyle: React.CSSProperties = isMdUp
+    ? {
+        borderRadius: heroMotion.radius,
+        transform: `perspective(950px) rotateX(${heroMotion.rotateX}deg) rotateY(${heroMotion.rotateY}deg) translateX(${heroMotion.translateX}px) translateY(${heroMotion.translateY}px) scale(${heroMotion.scale})`,
+        transformOrigin: "55% 35%",
+        willChange: "transform, border-radius",
+      }
+    : {
+        borderRadius: 24,
+        transform: "none",
+        transformOrigin: "55% 35%",
+      };
+
+  const ideasCardStyle: React.CSSProperties = isMdUp
+    ? {
+        borderRadius: ideasMotion.radius,
+        transform: `perspective(950px) rotateX(${ideasMotion.rotateX}deg) rotateY(${ideasMotion.rotateY}deg) translateX(${ideasMotion.translateX}px) translateY(${ideasMotion.translateY}px) scale(${ideasMotion.scale})`,
+        transformOrigin: "55% 35%",
+        willChange: "transform, border-radius",
+      }
+    : {
+        borderRadius: 24,
+        transform: "none",
+        transformOrigin: "55% 35%",
+      };
+
+  const hyroxCardStyle: React.CSSProperties = isMdUp
+    ? {
+        borderRadius: hyroxMotion.radius,
+        transform: `perspective(950px) rotateX(${hyroxMotion.rotateX}deg) rotateY(${hyroxMotion.rotateY}deg) translateX(${hyroxMotion.translateX}px) translateY(${hyroxMotion.translateY}px) scale(${hyroxMotion.scale})`,
+        transformOrigin: "55% 35%",
+        willChange: "transform, border-radius",
+      }
+    : {
+        borderRadius: 24,
+        transform: "none",
+        transformOrigin: "55% 35%",
+      };
 
   return (
     <div
@@ -673,13 +723,25 @@ export default function Home() {
             <button type="button" onClick={() => scrollToId("hero")} className="hover:text-white">
               L’app
             </button>
-            <button type="button" onClick={() => scrollToId("ideas")} className="hover:text-white">
+            <button
+              type="button"
+              onClick={() => scrollToId("ideas")}
+              className="hover:text-white"
+            >
               Événements
             </button>
-            <button type="button" onClick={() => scrollToId("hyrox")} className="hover:text-white">
+            <button
+              type="button"
+              onClick={() => scrollToId("hyrox")}
+              className="hover:text-white"
+            >
               Partenaires
             </button>
-            <button type="button" onClick={() => scrollToId("footer")} className="hover:text-white">
+            <button
+              type="button"
+              onClick={() => scrollToId("footer")}
+              className="hover:text-white"
+            >
               Contact
             </button>
           </nav>
@@ -705,8 +767,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* NAV “Suivant / Précédent” */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[60]">
+      {/* NAV “Suivant / Précédent” (safe-area friendly) */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-[60]">
         <div className="mx-auto flex max-w-6xl items-center justify-center px-5">
           <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/12 bg-white/10 px-2 py-2 shadow-[0_18px_60px_rgba(0,0,0,.28)] backdrop-blur">
             <button
@@ -898,12 +960,9 @@ export default function Home() {
           <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
         </div>
 
-        <div
-          className="mx-auto flex max-w-6xl items-center px-5 pb-10"
-          style={{ paddingTop: HEADER_H }}
-        >
+        <div className="mx-auto flex max-w-6xl items-center px-5 pb-10" style={{ paddingTop: HEADER_H }}>
           <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-            <div className="relative">
+            <div className="relative z-10">
               <Reveal>
                 <h1 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
                   <span className="block">Trouve des sportifs</span>
@@ -933,25 +992,15 @@ export default function Home() {
                   <span className="font-semibold text-white">pratique</span>, ton{" "}
                   <span className="font-semibold text-white">rythme</span>, tes{" "}
                   <span className="font-semibold text-white">objectifs</span> et tes{" "}
-                  <span className="font-semibold text-white">
-                    habitudes d’entraînement
-                  </span>{" "}
+                  <span className="font-semibold text-white">habitudes d’entraînement</span>{" "}
                   pour proposer des rencontres réellement pertinentes.
                 </p>
               </Reveal>
             </div>
 
-            <Reveal className="md:justify-self-end" delayMs={160}>
+            <Reveal className="md:justify-self-end relative z-0" delayMs={160}>
               <div className="relative">
-                <div
-                  className="relative overflow-hidden"
-                  style={{
-                    borderRadius: `${heroMotion.radius}px`,
-                    transform: `perspective(950px) rotateX(${heroMotion.rotateX}deg) rotateY(${heroMotion.rotateY}deg) translateX(${heroMotion.translateX}px) translateY(${heroMotion.translateY}px) scale(${heroMotion.scale})`,
-                    transformOrigin: "55% 35%",
-                    willChange: "transform, border-radius",
-                  }}
-                >
+                <div className="relative overflow-hidden" style={heroCardStyle}>
                   <Image
                     src={HERO}
                     alt="Aperçu TEMPO"
@@ -968,43 +1017,17 @@ export default function Home() {
         </div>
       </SnapSection>
 
-      {/* -------------------------------- PAGE 3 : store_3 (image à gauche) ------------------------------- */}
+      {/* -------------------------------- PAGE 3 : TEXTE À GAUCHE / IMAGE À DROITE ------------------------------- */}
       <SnapSection id="ideas" variant="dark" className="min-h-[120svh]">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 opacity-90 bg-[radial-gradient(1100px_520px_at_20%_18%,rgba(131,199,177,.22),transparent_60%)]" />
           <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
         </div>
 
-        <div
-          className="mx-auto flex max-w-6xl items-center px-5 pb-10"
-          style={{ paddingTop: HEADER_H }}
-        >
+        <div className="mx-auto flex max-w-6xl items-center px-5 pb-10" style={{ paddingTop: HEADER_H }}>
           <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-            <Reveal className="md:justify-self-start" delayMs={140}>
-              <div className="relative">
-                <div
-                  className="relative overflow-hidden"
-                  style={{
-                    borderRadius: `${ideasMotion.radius}px`,
-                    transform: `perspective(950px) rotateX(${ideasMotion.rotateX}deg) rotateY(${ideasMotion.rotateY}deg) translateX(${ideasMotion.translateX}px) translateY(${ideasMotion.translateY}px) scale(${ideasMotion.scale})`,
-                    transformOrigin: "45% 35%",
-                    willChange: "transform, border-radius",
-                  }}
-                >
-                  <Image
-                    src={STORE_3}
-                    alt="Événements TEMPO"
-                    width={1400}
-                    height={1000}
-                    className="block h-auto w-full object-cover"
-                    priority
-                    unoptimized
-                  />
-                </div>
-              </div>
-            </Reveal>
-
-            <div className="relative">
+            {/* ✅ Texte en 1er => à gauche sur web (md+) */}
+            <div className="relative z-10">
               <Reveal>
                 <h2 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
                   <span className="block">Un lieu.</span>
@@ -1020,6 +1043,23 @@ export default function Home() {
                 </p>
               </Reveal>
             </div>
+
+            {/* ✅ Image en 2e => à droite sur web (md+). Transform OFF sur mobile */}
+            <Reveal className="md:justify-self-end relative z-0" delayMs={140}>
+              <div className="relative">
+                <div className="relative overflow-hidden" style={ideasCardStyle}>
+                  <Image
+                    src={STORE_3}
+                    alt="Événements TEMPO"
+                    width={1400}
+                    height={1000}
+                    className="block h-auto w-full object-cover"
+                    priority
+                    unoptimized
+                  />
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </SnapSection>
@@ -1031,12 +1071,9 @@ export default function Home() {
           <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
         </div>
 
-        <div
-          className="mx-auto flex max-w-6xl items-center px-5 pb-10"
-          style={{ paddingTop: HEADER_H }}
-        >
+        <div className="mx-auto flex max-w-6xl items-center px-5 pb-10" style={{ paddingTop: HEADER_H }}>
           <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-            <div className="relative">
+            <div className="relative z-10">
               <Reveal>
                 <h2 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
                   <span className="block">Un match.</span>
@@ -1053,17 +1090,9 @@ export default function Home() {
               </Reveal>
             </div>
 
-            <Reveal className="md:justify-self-end" delayMs={160}>
+            <Reveal className="md:justify-self-end relative z-0" delayMs={160}>
               <div className="relative">
-                <div
-                  className="relative overflow-hidden"
-                  style={{
-                    borderRadius: `${hyroxMotion.radius}px`,
-                    transform: `perspective(950px) rotateX(${hyroxMotion.rotateX}deg) rotateY(${hyroxMotion.rotateY}deg) translateX(${hyroxMotion.translateX}px) translateY(${hyroxMotion.translateY}px) scale(${hyroxMotion.scale})`,
-                    transformOrigin: "55% 35%",
-                    willChange: "transform, border-radius",
-                  }}
-                >
+                <div className="relative overflow-hidden" style={hyroxCardStyle}>
                   <Image
                     src={STORE_4}
                     alt="Partenaires TEMPO"
