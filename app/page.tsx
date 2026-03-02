@@ -225,7 +225,8 @@ function DownloadButton({
       </span>
 
       <span className="relative flex items-center gap-3">
-        {isApp && showQr && qrSrc ? (
+        {/* ✅ QR pour App Store ET Google Play (même style) */}
+        {showQr && qrSrc ? (
           <span
             className={[
               "grid place-items-center rounded-2xl bg-white p-1.5",
@@ -503,10 +504,12 @@ export default function Home() {
   const APP_STORE_URL =
     "https://apps.apple.com/fr/app/tempo-partenaires-sportifs/id6758254738";
 
-  const PLAY_STORE_URL = "#";
+  // ✅ URL Play Store + QR code
+  const PLAY_STORE_URL =
+    "https://play.google.com/store/apps/details?id=com.cinqyou.tempo&hl=fr";
 
-  const APP_STORE_RATING = 4.8;
-  const PLAY_STORE_RATING = 4.4;
+  const APP_STORE_RATING = 5.0;
+  const PLAY_STORE_RATING = 5.0;
 
   const INSTAGRAM_TEMPO_URL = "https://www.instagram.com/jointhetempo.app/";
   const CONTACT_EMAIL = "contact@jointhetempo.app";
@@ -925,6 +928,8 @@ export default function Home() {
                       <DownloadButton
                         href={PLAY_STORE_URL}
                         store="play"
+                        showQr
+                        qrHref={PLAY_STORE_URL}
                         ratingValue={PLAY_STORE_RATING}
                       />
                     </div>
@@ -968,18 +973,9 @@ export default function Home() {
                   <span className="block">Trouve des sportifs</span>
                   <span className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
                     <span className="leading-none">qui suivent</span>
-                    <span className="leading-none text-white/90">ton</span>
-                    <span className="relative inline-flex items-center leading-none">
-                      <Image
-                        src="/logo_tempo.svg"
-                        alt="TEMPO"
-                        width={140}
-                        height={30}
-                        className="h-[1em] w-auto opacity-95"
-                        priority
-                      />
-                    </span>
-                    <span className="leading-none text-white/80">.</span>
+                    <span className="leading-none text-white/90">ton </span>
+                    <span className="relative inline-flex items-center leading-none"> </span>
+                    <span className="leading-none text-white/80">Tempo.</span>
                   </span>
                 </h1>
               </Reveal>
@@ -1196,9 +1192,7 @@ export default function Home() {
                   Politique de confidentialité ↗
                 </a>
 
-                <div className="mt-2 text-xs text-white/45">
-                  © {new Date().getFullYear()} TEMPO. Tous droits réservés.
-                </div>
+                <div className="mt-2 text-xs text-white/45">© {new Date().getFullYear()} TEMPO. Tous droits réservés.</div>
               </div>
             </div>
           </Reveal>
