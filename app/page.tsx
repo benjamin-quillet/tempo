@@ -64,16 +64,21 @@ function SectionShell({
   id,
   children,
   className = "",
+  clipOverflow = false,
+  hideBottomGlow = false,
 }: {
   id: string;
   children: React.ReactNode;
   className?: string;
+  clipOverflow?: boolean;
+  hideBottomGlow?: boolean;
 }) {
   return (
     <section
       id={id}
       className={cn(
-        "relative isolate w-full overflow-visible border-t border-white/6",
+        "relative isolate w-full border-t border-white/6",
+        clipOverflow ? "overflow-hidden" : "overflow-visible",
         "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]",
         className
       )}
@@ -81,7 +86,9 @@ function SectionShell({
       <div className="pointer-events-none absolute inset-0 opacity-[0.28]">
         <div className="absolute -top-56 left-1/2 h-[520px] w-[920px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,.12),transparent_60%)] blur-3xl" />
         <div className="absolute top-[18%] -left-[220px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.22),transparent_60%)] blur-3xl" />
-        <div className="absolute -bottom-[260px] -right-[260px] h-[640px] w-[640px] rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.22),transparent_62%)] blur-3xl" />
+        {!hideBottomGlow && (
+          <div className="absolute -bottom-[260px] -right-[260px] h-[640px] w-[640px] rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.22),transparent_62%)] blur-3xl" />
+        )}
       </div>
 
       <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Cfilter id=%22n%22 x=%220%22 y=%220%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22300%22 height=%22300%22 filter=%22url(%23n)%22 opacity=%220.35%22/%3E%3C/svg%3E')] mix-blend-overlay" />
@@ -676,9 +683,14 @@ export default function Home() {
       </SectionShell>
 
       {/* -------------------------------- FOOTER ------------------------------ */}
-      <SectionShell id="footer" className="pt-16 pb-8 sm:pt-20 sm:pb-10 md:pt-24 md:pb-12">
-        <footer>
-          <div className="border-t border-white/10 pt-8">
+      <SectionShell
+        id="footer"
+        className="pt-16 pb-0 sm:pt-20 md:pt-24"
+        clipOverflow
+        hideBottomGlow
+      >
+        <footer className="pb-0">
+          <div className="border-t border-white/10 pt-8 pb-0">
             <Reveal>
               <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-center gap-3">
