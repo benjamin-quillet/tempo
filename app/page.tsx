@@ -23,6 +23,12 @@ function Reveal({ children, className = "", delayMs = 0 }: RevealProps) {
     const el = ref.current;
     if (!el) return;
 
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    if (isMobile) {
+      setShown(true);
+      return;
+    }
+
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -41,8 +47,9 @@ function Reveal({ children, className = "", delayMs = 0 }: RevealProps) {
     <div
       ref={ref}
       className={cn(
-        "transition-all duration-700 will-change-transform",
-        shown ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
+        "opacity-100 translate-y-0",
+        "md:transition-all md:duration-700 md:will-change-transform",
+        shown ? "md:opacity-100 md:translate-y-0" : "md:opacity-0 md:translate-y-6",
         className
       )}
       style={{ transitionDelay: `${delayMs}ms` }}
@@ -258,7 +265,7 @@ function DownloadButton({
         {showQr && qrSrc ? (
           <span
             className={cn(
-              "hidden place-items-center rounded-2xl bg-white p-1.5 md:grid",
+              "grid place-items-center rounded-2xl bg-white p-1.5",
               "shadow-[0_16px_40px_rgba(0,0,0,.18)]"
             )}
             aria-hidden
@@ -269,7 +276,7 @@ function DownloadButton({
               alt=""
               width={88}
               height={88}
-              className="h-[88px] w-[88px] rounded-xl object-contain"
+              className="h-[56px] w-[56px] rounded-xl object-contain sm:h-[72px] sm:w-[72px] md:h-[88px] md:w-[88px]"
               loading="lazy"
             />
           </span>
@@ -286,20 +293,6 @@ function DownloadButton({
 }
 
 /* ------------------------------ Helpers ----------------------------- */
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const onChange = () => setMatches(mq.matches);
-    onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, [query]);
-
-  return matches;
-}
-
 const SECTION_IDS = ["home", "hero", "ideas", "hyrox", "footer"] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 
@@ -307,7 +300,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   home: "Accueil",
   hero: "L’app",
   ideas: "Événements",
-  hyrox: "Partenaires",
+  hyrox: "Sportifs",
   footer: "Contact",
 };
 
@@ -395,7 +388,6 @@ export default function Home() {
   const CONTACT_EMAIL = "contact@jointhetempo.app";
 
   const HEADER_H = 72;
-  const isMdUp = useMediaQuery("(min-width: 768px)");
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -529,7 +521,7 @@ export default function Home() {
               onClick={() => scrollToId("hyrox")}
               className="hover:text-white"
             >
-              Partenaires
+              Sportifs
             </button>
             <button
               type="button"
@@ -618,7 +610,7 @@ export default function Home() {
 
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/74 sm:text-[17px]">
                 Trouve des partenaires d’entraînement, rejoins des événements sportifs et organise
-                tes prochaines sessions.
+                tes prochaines sessions simplement.
               </p>
             </div>
           </Reveal>
@@ -644,20 +636,18 @@ export default function Home() {
                 <TopPill>Pourquoi TEMPO</TopPill>
 
                 <h2 className="mt-6 text-3xl font-extrabold leading-[1.05] text-white sm:text-4xl">
-                  Une landing page plus propre, plus lisible, plus mobile-friendly.
+                  Le réseau pensé pour trouver ton prochain partenaire de sport.
                 </h2>
 
                 <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/76 sm:text-[17px]">
-                  Le site garde le système <span className="font-semibold text-white">suivant / précédent</span>,
-                  mais le scroll reste libre. Les visuels ne sont plus coupés par un snap forcé,
-                  et chaque écran peut être consulté naturellement jusqu’en bas.
+                  Tempo te met en relation avec des sportifs près de chez toi qui partagent les
+                  mêmes centres d’intérêt.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-2">
-                  <Chip>Scroll fluide</Chip>
-                  <Chip>Images lisibles</Chip>
-                  <Chip>Design premium</Chip>
-                  <Chip>Responsive mobile / desktop</Chip>
+                  <Chip>Rencontres</Chip>
+                  <Chip>Événements sportifs</Chip>
+                  <Chip>Discussions avec centre d’intérêt</Chip>
                 </div>
               </div>
             </Reveal>
@@ -681,14 +671,14 @@ export default function Home() {
                   <DownloadButton
                     href={APP_STORE_URL}
                     store="appstore"
-                    showQr={isMdUp}
+                    showQr
                     qrHref={APP_STORE_URL}
                     ratingValue={APP_STORE_RATING}
                   />
                   <DownloadButton
                     href={PLAY_STORE_URL}
                     store="play"
-                    showQr={isMdUp}
+                    showQr
                     qrHref={PLAY_STORE_URL}
                     ratingValue={PLAY_STORE_RATING}
                   />
@@ -768,18 +758,20 @@ export default function Home() {
                   <>
                     Crée ou rejoins un{" "}
                     <span className="font-semibold text-white">événement sportif</span> près de
-                    chez toi, et trouve des partenaires qui partagent ton rythme. L’interface met
-                    en avant l’essentiel : date, heure, lieu et visibilité.
+                    chez toi, et retrouve facilement des partenaires autour de l’essentiel : le{" "}
+                    <span className="font-semibold text-white">sport</span>, la{" "}
+                    <span className="font-semibold text-white">date</span> et le{" "}
+                    <span className="font-semibold text-white">lieu</span>.
                   </>
                 }
-                chips={["Date", "Heure", "Lieu", "Public / privé"]}
+                chips={["Date", "Lieu", "Sport"]}
               />
             </Reveal>
           </div>
         </div>
       </SectionShell>
 
-      {/* -------------------------------- PAGE 4 : PARTENAIRES / MESSAGES ------------------------------- */}
+      {/* -------------------------------- PAGE 4 : SPORTIFS / MESSAGES ------------------------------- */}
       <SectionShell id="hyrox" className="py-14 sm:py-16 md:py-20">
         <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-10">
           <div className="relative z-10">
@@ -799,10 +791,10 @@ export default function Home() {
                     Discute, propose une session et{" "}
                     <span className="font-semibold text-white">planifie</span> ta prochaine sortie
                     en quelques clics. Une fois le match créé, la conversation démarre
-                    immédiatement et reste simple à utiliser sur mobile.
+                    immédiatement et reste simple à utiliser.
                   </>
                 }
-                chips={["Nouveaux matchs", "Conversations", "Planification", "Mobile-first"]}
+                chips={["Matchs", "Conversations", "Centres d’intérêts"]}
               />
             </Reveal>
           </div>
@@ -810,7 +802,7 @@ export default function Home() {
           <Reveal className="relative z-0 md:justify-self-end" delayMs={160}>
             <PhoneFrame
               src={STORE_4}
-              alt="Partenaires TEMPO"
+              alt="Sportifs TEMPO"
               sizes="(max-width: 768px) 100vw, 48vw"
             />
           </Reveal>
@@ -894,7 +886,7 @@ export default function Home() {
                     onClick={() => scrollToId("hyrox")}
                     className="text-left text-white/70 hover:text-white"
                   >
-                    Partenaires ↗
+                    Sportifs ↗
                   </button>
                   <button
                     type="button"
