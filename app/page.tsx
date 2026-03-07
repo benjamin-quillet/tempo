@@ -1,7 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+/* -------------------------------- utilities -------------------------------- */
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
 
 /* --------------------------------- Reveal --------------------------------- */
 type RevealProps = {
@@ -25,7 +30,7 @@ function Reveal({ children, className = "", delayMs = 0 }: RevealProps) {
           obs.disconnect();
         }
       },
-      { threshold: 0.18 }
+      { threshold: 0.16 }
     );
 
     obs.observe(el);
@@ -35,11 +40,11 @@ function Reveal({ children, className = "", delayMs = 0 }: RevealProps) {
   return (
     <div
       ref={ref}
-      className={[
+      className={cn(
         "transition-all duration-700 will-change-transform",
-        shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
-        className,
-      ].join(" ")}
+        shown ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
+        className
+      )}
       style={{ transitionDelay: `${delayMs}ms` }}
     >
       {children}
@@ -48,44 +53,67 @@ function Reveal({ children, className = "", delayMs = 0 }: RevealProps) {
 }
 
 /* ------------------------------- Section Shell ------------------------------ */
-function SnapSection({
+function SectionShell({
   id,
-  variant,
   children,
   className = "",
 }: {
-  id?: string;
-  variant: "dark" | "light";
+  id: string;
   children: React.ReactNode;
   className?: string;
 }) {
-  const dark =
-    "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]";
-  const light =
-    "bg-[linear-gradient(135deg,rgba(62,129,190,.96),rgba(83,154,191,.72),rgba(131,199,177,.74))]";
-
   return (
     <section
       id={id}
-      className={[
-        "relative isolate snap-start [scroll-snap-stop:always]",
-        "w-full overflow-hidden",
-        variant === "dark" ? dark : light,
-        className,
-      ].join(" ")}
+      className={cn(
+        "relative isolate w-full overflow-visible border-t border-white/6",
+        "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]",
+        className
+      )}
     >
-      {/* glow premium (subtil) */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.28]">
         <div className="absolute -top-56 left-1/2 h-[520px] w-[920px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,.12),transparent_60%)] blur-3xl" />
         <div className="absolute top-[18%] -left-[220px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,rgba(131,199,177,.22),transparent_60%)] blur-3xl" />
         <div className="absolute -bottom-[260px] -right-[260px] h-[640px] w-[640px] rounded-full bg-[radial-gradient(circle_at_center,rgba(62,129,190,.22),transparent_62%)] blur-3xl" />
       </div>
 
-      {/* grain discret */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Cfilter id=%22n%22 x=%220%22 y=%220%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22300%22 height=%22300%22 filter=%22url(%23n)%22 opacity=%220.35%22/%3E%3C/svg%3E')] mix-blend-overlay" />
 
-      <div className="relative">{children}</div>
+      <div className="relative mx-auto w-full max-w-6xl px-4 sm:px-5">{children}</div>
     </section>
+  );
+}
+
+/* ------------------------------ Premium UI bits ----------------------------- */
+function TopPill({
+  children,
+  tone = "mint",
+}: {
+  children: React.ReactNode;
+  tone?: "mint" | "blue";
+}) {
+  const skin =
+    tone === "mint"
+      ? "border-[#83C7B1]/25 bg-[#83C7B1]/10 text-[#A9E1D0]"
+      : "border-[#3E81BE]/25 bg-[#3E81BE]/10 text-[#A9D2F6]";
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.18em]",
+        skin
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/78">
+      {children}
+    </span>
   );
 }
 
@@ -105,10 +133,10 @@ function Stars({
 }) {
   const pct = Math.max(0, Math.min(100, (value / outOf) * 100));
   return (
-    <span className={["relative inline-block leading-none", className].join(" ")}>
+    <span className={cn("relative inline-block leading-none", className)}>
       <span className={baseClass}>{"★★★★★"}</span>
       <span
-        className={["absolute left-0 top-0 overflow-hidden", fillClass].join(" ")}
+        className={cn("absolute left-0 top-0 overflow-hidden", fillClass)}
         style={{ width: `${pct}%` }}
         aria-hidden
       >
@@ -122,7 +150,7 @@ function formatRatingFR(v: number) {
   return v.toFixed(1).replace(".", ",");
 }
 
-/* ------------------------------ Premium Buttons (QR style préféré) ----------------------------- */
+/* ------------------------------ Premium Buttons ----------------------------- */
 function DownloadButton({
   href,
   store,
@@ -173,47 +201,49 @@ function DownloadButton({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={[
-        "group relative flex items-center justify-between gap-4 rounded-2xl px-5 py-4",
+      className={cn(
+        "group relative flex items-center justify-between gap-4 rounded-2xl px-4 py-4 sm:px-5",
         "border backdrop-blur",
         "transition hover:-translate-y-0.5 active:translate-y-0",
         "focus:outline-none focus:ring-2 focus:ring-white/30",
-        skin,
-      ].join(" ")}
+        skin
+      )}
     >
       <span className="pointer-events-none absolute inset-[1px] rounded-2xl bg-[linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0))] opacity-45" />
 
-      <span className="relative flex min-w-0 items-center gap-4">
+      <span className="relative flex min-w-0 items-center gap-3 sm:gap-4">
         <Image
           src={storeLogoSrc}
           alt={storeLogoAlt}
           width={60}
           height={60}
-          className={[
+          className={cn(
             "shrink-0 object-contain",
             isApp
-              ? "h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16"
-              : "h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12",
-            isApp ? "opacity-90" : "opacity-95",
-          ].join(" ")}
+              ? "h-11 w-11 sm:h-14 sm:w-14 md:h-16 md:w-16"
+              : "h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12",
+            isApp ? "opacity-90" : "opacity-95"
+          )}
           priority
         />
 
         <span className="flex min-w-0 flex-col leading-tight">
           <span
-            className={[
-              "text-[11px] font-semibold uppercase tracking-wider",
-              isApp ? "text-black/60" : "text-white/60",
-            ].join(" ")}
+            className={cn(
+              "text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]",
+              isApp ? "text-black/60" : "text-white/60"
+            )}
           >
             Télécharger
           </span>
 
-          <span className="text-sm font-extrabold">{isApp ? "App Store" : "Google Play"}</span>
+          <span className="text-sm font-extrabold sm:text-base">
+            {isApp ? "App Store" : "Google Play"}
+          </span>
 
           {typeof ratingValue === "number" && (
             <span className="mt-2 flex flex-col gap-1">
-              <span className={["text-xs font-extrabold", ratingTextClass].join(" ")}>
+              <span className={cn("text-xs font-extrabold", ratingTextClass)}>
                 {formatRatingFR(ratingValue)}
               </span>
               <span className="text-xs leading-none">
@@ -225,13 +255,12 @@ function DownloadButton({
       </span>
 
       <span className="relative flex items-center gap-3">
-        {/* ✅ QR pour App Store ET Google Play (même style) */}
         {showQr && qrSrc ? (
           <span
-            className={[
-              "grid place-items-center rounded-2xl bg-white p-1.5",
-              "shadow-[0_16px_40px_rgba(0,0,0,.18)]",
-            ].join(" ")}
+            className={cn(
+              "hidden place-items-center rounded-2xl bg-white p-1.5 md:grid",
+              "shadow-[0_16px_40px_rgba(0,0,0,.18)]"
+            )}
             aria-hidden
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -240,7 +269,7 @@ function DownloadButton({
               alt=""
               width={88}
               height={88}
-              className="h-[74px] w-[74px] rounded-xl object-contain sm:h-[88px] sm:w-[88px]"
+              className="h-[88px] w-[88px] rounded-xl object-contain"
               loading="lazy"
             />
           </span>
@@ -256,235 +285,7 @@ function DownloadButton({
   );
 }
 
-/* ------------------------------ Snap Scrolling (fix “Suivant” footer) ------------------------------ */
-function useSnapScroll(sectionIds: string[], headerH: number) {
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const lockRef = useRef(false);
-
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    const clampIdx = (idx: number) => Math.max(0, Math.min(sectionIds.length - 1, idx));
-
-    const getTargets = () =>
-      sectionIds
-        .map((id) => document.getElementById(id) as HTMLElement | null)
-        .filter(Boolean) as HTMLElement[];
-
-    const maxScrollTop = () => Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-
-    const scrollToIndex = (idx: number) => {
-      const clamped = clampIdx(idx);
-      const el = document.getElementById(sectionIds[clamped]) as HTMLElement | null;
-      if (!el) return;
-
-      const rawTop = el.offsetTop - headerH;
-      const top = Math.min(Math.max(0, rawTop), maxScrollTop());
-      scroller.scrollTo({ top, behavior: "smooth" });
-    };
-
-    const getNearestIndex = () => {
-      const y = scroller.scrollTop;
-      const mx = maxScrollTop();
-
-      if (mx > 0 && y >= mx - 2) return sectionIds.length - 1;
-
-      const targets = getTargets();
-      if (!targets.length) return 0;
-
-      let bestIdx = 0;
-      let bestDist = Infinity;
-
-      for (let i = 0; i < targets.length; i++) {
-        const top = targets[i].offsetTop - headerH;
-        const d = Math.abs(y - top);
-        if (d < bestDist) {
-          bestDist = d;
-          bestIdx = i;
-        }
-      }
-      return clampIdx(bestIdx);
-    };
-
-    const forceNearest = () => {
-      if (lockRef.current) return;
-      lockRef.current = true;
-      scrollToIndex(getNearestIndex());
-      window.setTimeout(() => {
-        lockRef.current = false;
-      }, 520);
-    };
-
-    // Trackpad accumulation
-    let acc = 0;
-    let accT = 0;
-
-    const onWheel = (e: WheelEvent) => {
-      if (lockRef.current) {
-        e.preventDefault();
-        return;
-      }
-      if ((e as any).ctrlKey) return;
-
-      const now = Date.now();
-      if (now - accT > 140) acc = 0;
-      accT = now;
-
-      acc += e.deltaY;
-
-      const TH = 40;
-      if (Math.abs(acc) < TH) {
-        e.preventDefault();
-        return;
-      }
-
-      e.preventDefault();
-      const dir = acc > 0 ? 1 : -1;
-      acc = 0;
-
-      const idx = getNearestIndex();
-      lockRef.current = true;
-      scrollToIndex(idx + dir);
-      window.setTimeout(() => {
-        lockRef.current = false;
-      }, 650);
-    };
-
-    // Mobile swipe
-    let touchStartY = 0;
-    let touchStartX = 0;
-    let touchT = 0;
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (!e.touches?.length) return;
-      touchStartY = e.touches[0].clientY;
-      touchStartX = e.touches[0].clientX;
-      touchT = Date.now();
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (lockRef.current) return;
-      if (!e.changedTouches?.length) return;
-
-      const dt = Date.now() - touchT;
-      const dy = e.changedTouches[0].clientY - touchStartY;
-      const dx = e.changedTouches[0].clientX - touchStartX;
-
-      if (Math.abs(dx) > Math.abs(dy)) return;
-      if (dt > 700) return;
-
-      const TH = 44;
-      if (Math.abs(dy) < TH) {
-        forceNearest();
-        return;
-      }
-
-      const dir = dy < 0 ? 1 : -1;
-      const idx = getNearestIndex();
-      lockRef.current = true;
-      scrollToIndex(idx + dir);
-      window.setTimeout(() => {
-        lockRef.current = false;
-      }, 650);
-    };
-
-    // Snap au repos (TOUJOURS)
-    let idleTimer = 0;
-    const onScroll = () => {
-      window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => {
-        forceNearest();
-      }, 110);
-    };
-
-    const onResize = () => {
-      window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => {
-        forceNearest();
-      }, 60);
-    };
-
-    scroller.addEventListener("wheel", onWheel, { passive: false });
-    scroller.addEventListener("scroll", onScroll, { passive: true });
-    scroller.addEventListener("touchstart", onTouchStart, { passive: true });
-    scroller.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("resize", onResize);
-
-    const t = window.setTimeout(() => {
-      forceNearest();
-    }, 220);
-
-    return () => {
-      window.clearTimeout(t);
-      window.clearTimeout(idleTimer);
-      scroller.removeEventListener("wheel", onWheel as any);
-      scroller.removeEventListener("scroll", onScroll as any);
-      scroller.removeEventListener("touchstart", onTouchStart as any);
-      scroller.removeEventListener("touchend", onTouchEnd as any);
-      window.removeEventListener("resize", onResize);
-    };
-  }, [sectionIds, headerH]);
-
-  return scrollerRef;
-}
-
-/* ------------------------------ helpers ----------------------------- */
-function clamp01(v: number) {
-  return Math.max(0, Math.min(1, v));
-}
-
-function easeOutCubic(t: number) {
-  const x = clamp01(t);
-  return 1 - Math.pow(1 - x, 3);
-}
-
-function rampProgressFor(
-  scroller: HTMLDivElement | null,
-  el: HTMLElement | null,
-  scrollTop: number,
-  headerH: number
-) {
-  if (!scroller || !el) return { progress: 0, h: 1 };
-  const start = el.offsetTop - headerH;
-  const h = scroller.clientHeight;
-  const progress = clamp01((scrollTop - start) / Math.max(1, h));
-  return { progress, h };
-}
-
-/** ✅ Index "actif" basé sur le haut de viewport (sous le header) */
-function getActiveSectionIndex(scroller: HTMLDivElement | null, ids: string[], headerH: number) {
-  if (!scroller) return 0;
-
-  const mx = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-  if (mx > 0 && scroller.scrollTop >= mx - 2) return ids.length - 1;
-
-  const y = scroller.scrollTop + headerH + 1;
-
-  let idx = 0;
-  for (let i = 0; i < ids.length; i++) {
-    const el = document.getElementById(ids[i]) as HTMLElement | null;
-    if (el && el.offsetTop <= y) idx = i;
-  }
-  return idx;
-}
-
-function cardMotion(progress: number, flipX = false) {
-  const t = easeOutCubic(progress);
-  const scale = 1.2 - t * 0.26;
-  const rotateX = 18 - t * 18;
-  const rotateYBase = -26 + t * 26;
-  const translateY = t * 62;
-  const translateXBase = t * -78;
-  const radius = 72 - t * 46;
-
-  const rotateY = flipX ? -rotateYBase : rotateYBase;
-  const translateX = flipX ? -translateXBase : translateXBase;
-
-  return { scale, rotateX, rotateY, translateX, translateY, radius };
-}
-
-/* ------------------------------ Media Query (disable transforms mobile) ----------------------------- */
+/* ------------------------------ Helpers ----------------------------- */
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(false);
 
@@ -499,12 +300,91 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
+const SECTION_IDS = ["home", "hero", "ideas", "hyrox", "footer"] as const;
+type SectionId = (typeof SECTION_IDS)[number];
+
+const SECTION_LABELS: Record<SectionId, string> = {
+  home: "Accueil",
+  hero: "L’app",
+  ideas: "Événements",
+  hyrox: "Partenaires",
+  footer: "Contact",
+};
+
+function PhoneFrame({
+  src,
+  alt,
+  sizes,
+}: {
+  src: string;
+  alt: string;
+  sizes: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/5 p-2 shadow-[0_24px_80px_rgba(0,0,0,.26)] sm:p-3">
+      <div className="overflow-hidden rounded-[22px] border border-white/8 bg-[#0b1820]">
+        <Image
+          src={src}
+          alt={alt}
+          width={768}
+          height={1365}
+          className="block h-auto w-full"
+          sizes={sizes}
+          unoptimized
+        />
+      </div>
+    </div>
+  );
+}
+
+function FeatureTextCard({
+  tone = "mint",
+  badge,
+  title,
+  description,
+  chips,
+}: {
+  tone?: "mint" | "blue";
+  badge: string;
+  title: React.ReactNode;
+  description: React.ReactNode;
+  chips: string[];
+}) {
+  const shell =
+    tone === "mint"
+      ? "bg-[radial-gradient(900px_300px_at_0%_0%,rgba(131,199,177,.16),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))]"
+      : "bg-[radial-gradient(900px_300px_at_0%_0%,rgba(62,129,190,.18),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))]";
+
+  return (
+    <div
+      className={cn(
+        "rounded-[30px] border border-white/10 p-6 shadow-[0_30px_90px_rgba(0,0,0,.22)] sm:p-8 md:p-10",
+        shell
+      )}
+    >
+      <TopPill tone={tone}>{badge}</TopPill>
+
+      <h2 className="mt-6 text-4xl font-extrabold leading-[1.03] sm:text-[2.8rem] md:text-5xl">
+        {title}
+      </h2>
+
+      <div className="mt-7 max-w-xl text-base leading-relaxed text-white/78 sm:text-[17px]">
+        {description}
+      </div>
+
+      <div className="mt-6 flex flex-wrap gap-2">
+        {chips.map((chip) => (
+          <Chip key={chip}>{chip}</Chip>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------- Page ---------------------------------- */
 export default function Home() {
   const APP_STORE_URL =
     "https://apps.apple.com/fr/app/tempo-partenaires-sportifs/id6758254738";
-
-  // ✅ URL Play Store + QR code
   const PLAY_STORE_URL =
     "https://play.google.com/store/apps/details?id=com.cinqyou.tempo&hl=fr";
 
@@ -515,44 +395,47 @@ export default function Home() {
   const CONTACT_EMAIL = "contact@jointhetempo.app";
 
   const HEADER_H = 72;
-
-  // ✅ Desktop/tablette (>= md) : on garde les transforms. Mobile : on les coupe.
   const isMdUp = useMediaQuery("(min-width: 768px)");
 
-  const sections = useMemo(() => ["triphero", "hero", "ideas", "hyrox", "footer"], []);
-  const scrollerRef = useSnapScroll(sections, HEADER_H);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [currentIdx, setCurrentIdx] = useState(0);
 
-  const getEl = (id: string) => {
-    if (typeof window === "undefined") return null;
-    return document.getElementById(id) as HTMLElement | null;
-  };
+  const scrollToId = useCallback(
+    (id: string) => {
+      const scroller = scrollerRef.current;
+      const el = document.getElementById(id) as HTMLElement | null;
+      if (!scroller || !el) return;
 
-  const scrollToId = (id: string) => {
+      const maxTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      const rawTop = el.offsetTop - HEADER_H - 12;
+      const top = Math.min(Math.max(0, rawTop), maxTop);
+
+      scroller.scrollTo({ top, behavior: "smooth" });
+    },
+    [HEADER_H]
+  );
+
+  const updateCurrentIdx = useCallback(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
-    const el = document.getElementById(id) as HTMLElement | null;
-    if (!el) return;
 
-    const rawTop = el.offsetTop - HEADER_H;
     const maxTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const top = Math.min(Math.max(0, rawTop), maxTop);
 
-    scroller.scrollTo({ top, behavior: "smooth" });
-  };
+    if (maxTop > 0 && scroller.scrollTop >= maxTop - 4) {
+      setCurrentIdx(SECTION_IDS.length - 1);
+      return;
+    }
 
-  // images
-  const HERO = "/Images_store_2.jpeg";
-  const STORE_3 = "/Images_store_3.jpeg";
-  const STORE_4 = "/Images_store_4.jpeg";
-  const S_COURSE2 = "/sports/course2.jpg";
+    const probeY = scroller.scrollTop + HEADER_H + scroller.clientHeight * 0.35;
 
-  // Triptyque
-  const TRIP_1 = "/Triptique 1.png";
-  const TRIP_2 = "/Triptique 2.png";
-  const TRIP_3 = "/Triptique 3.png";
+    let idx = 0;
+    for (let i = 0; i < SECTION_IDS.length; i++) {
+      const el = document.getElementById(SECTION_IDS[i]) as HTMLElement | null;
+      if (el && el.offsetTop <= probeY) idx = i;
+    }
 
-  // scroll tracking
-  const [scrollTop, setScrollTop] = useState(0);
+    setCurrentIdx(idx);
+  }, [HEADER_H]);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -563,148 +446,56 @@ export default function Home() {
       if (raf) return;
       raf = window.requestAnimationFrame(() => {
         raf = 0;
-        setScrollTop(scroller.scrollTop);
+        updateCurrentIdx();
       });
     };
 
+    const onResize = () => updateCurrentIdx();
+
     scroller.addEventListener("scroll", onScroll, { passive: true });
-    setScrollTop(scroller.scrollTop);
+    window.addEventListener("resize", onResize);
+    updateCurrentIdx();
 
     return () => {
       if (raf) cancelAnimationFrame(raf);
-      scroller.removeEventListener("scroll", onScroll as any);
+      scroller.removeEventListener("scroll", onScroll as EventListener);
+      window.removeEventListener("resize", onResize);
     };
-  }, [scrollerRef]);
+  }, [updateCurrentIdx]);
 
-  const currentIdx = useMemo(() => {
-    if (typeof window === "undefined") return 0;
-    return getActiveSectionIndex(scrollerRef.current, sections, HEADER_H);
-  }, [scrollTop, scrollerRef, sections]);
-
-  const goPrev = () => {
+  const goPrev = useCallback(() => {
     const idx = Math.max(0, currentIdx - 1);
-    scrollToId(sections[idx]);
-  };
+    scrollToId(SECTION_IDS[idx]);
+  }, [currentIdx, scrollToId]);
 
-  const goNext = () => {
-    const idx = Math.min(sections.length - 1, currentIdx + 1);
-    scrollToId(sections[idx]);
-  };
+  const goNext = useCallback(() => {
+    const idx = Math.min(SECTION_IDS.length - 1, currentIdx + 1);
+    scrollToId(SECTION_IDS[idx]);
+  }, [currentIdx, scrollToId]);
 
-  /* ========================================================================== */
-  // Trip HERO ramp
-  const tripHeroRamp = useMemo(() => {
-    const scroller = scrollerRef.current;
-    const el = getEl("triphero");
-    return rampProgressFor(scroller, el, scrollTop, 0);
-  }, [scrollTop, scrollerRef]);
+  const currentSection = SECTION_IDS[currentIdx] ?? "home";
 
-  const tripHeroP = tripHeroRamp.progress;
-  const t = easeOutCubic(tripHeroP);
-
-  const t1X = t * -90;
-  const t1Y = t * -160;
-  const t1R = t * -7.5;
-  const t1Z = t * 80;
-
-  const t2X = t * 40;
-  const t2Y = t * 260;
-  const t2R = t * 6.5;
-  const t2Z = t * 140;
-
-  const t3X = t * 110;
-  const t3Y = t * -360;
-  const t3R = t * -6.0;
-  const t3Z = t * 60;
-
-  const tripShadow = 0.12 + t * 0.22;
-  const tripRadius = 0;
-
-  /* ========================================================================== */
-  const heroRamp = useMemo(() => {
-    const scroller = scrollerRef.current;
-    const el = getEl("hero");
-    return rampProgressFor(scroller, el, scrollTop, HEADER_H);
-  }, [scrollTop, scrollerRef]);
-
-  const heroMotion = useMemo(() => cardMotion(heroRamp.progress, false), [heroRamp.progress]);
-
-  const ideasRamp = useMemo(() => {
-    const scroller = scrollerRef.current;
-    const el = getEl("ideas");
-    return rampProgressFor(scroller, el, scrollTop, HEADER_H);
-  }, [scrollTop, scrollerRef]);
-
-  // ✅ Page 3 : image à droite => même sens que page 2/4 (pas de flipX)
-  const ideasMotion = useMemo(() => cardMotion(ideasRamp.progress, false), [ideasRamp.progress]);
-
-  const hyroxRamp = useMemo(() => {
-    const scroller = scrollerRef.current;
-    const el = getEl("hyrox");
-    return rampProgressFor(scroller, el, scrollTop, HEADER_H);
-  }, [scrollTop, scrollerRef]);
-
-  const hyroxMotion = useMemo(() => cardMotion(hyroxRamp.progress, false), [hyroxRamp.progress]);
-
-  // ✅ Styles : transforms ON uniquement >= md
-  const heroCardStyle: React.CSSProperties = isMdUp
-    ? {
-        borderRadius: heroMotion.radius,
-        transform: `perspective(950px) rotateX(${heroMotion.rotateX}deg) rotateY(${heroMotion.rotateY}deg) translateX(${heroMotion.translateX}px) translateY(${heroMotion.translateY}px) scale(${heroMotion.scale})`,
-        transformOrigin: "55% 35%",
-        willChange: "transform, border-radius",
-      }
-    : {
-        borderRadius: 24,
-        transform: "none",
-        transformOrigin: "55% 35%",
-      };
-
-  const ideasCardStyle: React.CSSProperties = isMdUp
-    ? {
-        borderRadius: ideasMotion.radius,
-        transform: `perspective(950px) rotateX(${ideasMotion.rotateX}deg) rotateY(${ideasMotion.rotateY}deg) translateX(${ideasMotion.translateX}px) translateY(${ideasMotion.translateY}px) scale(${ideasMotion.scale})`,
-        transformOrigin: "55% 35%",
-        willChange: "transform, border-radius",
-      }
-    : {
-        borderRadius: 24,
-        transform: "none",
-        transformOrigin: "55% 35%",
-      };
-
-  const hyroxCardStyle: React.CSSProperties = isMdUp
-    ? {
-        borderRadius: hyroxMotion.radius,
-        transform: `perspective(950px) rotateX(${hyroxMotion.rotateX}deg) rotateY(${hyroxMotion.rotateY}deg) translateX(${hyroxMotion.translateX}px) translateY(${hyroxMotion.translateY}px) scale(${hyroxMotion.scale})`,
-        transformOrigin: "55% 35%",
-        willChange: "transform, border-radius",
-      }
-    : {
-        borderRadius: 24,
-        transform: "none",
-        transformOrigin: "55% 35%",
-      };
+  const HERO = "/Images_store_2.jpeg";
+  const STORE_3 = "/Images_store_3.jpeg";
+  const STORE_4 = "/Images_store_4.jpeg";
+  const BANNER = "/Banniere.png";
 
   return (
     <div
       ref={scrollerRef}
-      className={[
-        "snap-root",
+      className={cn(
         "h-svh overflow-y-auto overflow-x-hidden",
-        "scroll-smooth",
-        "snap-y snap-mandatory",
-        "text-white",
-        "overscroll-y-contain",
-      ].join(" ")}
-      style={{ scrollPaddingTop: HEADER_H }}
+        "scroll-smooth text-white overscroll-y-contain",
+        "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]"
+      )}
+      style={{ scrollPaddingTop: HEADER_H + 12 }}
     >
       {/* Header sticky */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-tempo-ink/70 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-[rgba(7,18,24,.72)] backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-5">
           <button
             type="button"
-            onClick={() => scrollToId("triphero")}
+            onClick={() => scrollToId("home")}
             className="flex items-center gap-3"
           >
             <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-[0_14px_40px_rgba(0,0,0,.25)]">
@@ -770,20 +561,25 @@ export default function Home() {
         </div>
       </header>
 
-      {/* NAV “Suivant / Précédent” (safe-area friendly) */}
+      {/* NAV “Suivant / Précédent” */}
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-[60]">
-        <div className="mx-auto flex max-w-6xl items-center justify-center px-5">
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-4 sm:justify-end sm:px-5">
           <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/12 bg-white/10 px-2 py-2 shadow-[0_18px_60px_rgba(0,0,0,.28)] backdrop-blur">
+            <div className="hidden min-w-[110px] px-2 text-center text-[11px] font-extrabold tracking-wide text-white/45 sm:block">
+              {String(currentIdx + 1).padStart(2, "0")} /{" "}
+              {String(SECTION_IDS.length).padStart(2, "0")} · {SECTION_LABELS[currentSection]}
+            </div>
+
             <button
               type="button"
               onClick={goPrev}
               disabled={currentIdx === 0}
-              className={[
+              className={cn(
                 "rounded-xl px-3 py-2 text-xs font-extrabold transition",
                 currentIdx === 0
                   ? "cursor-not-allowed text-white/35"
-                  : "text-white/85 hover:bg-white/10",
-              ].join(" ")}
+                  : "text-white/85 hover:bg-white/10"
+              )}
             >
               ↑ Précédent
             </button>
@@ -793,13 +589,13 @@ export default function Home() {
             <button
               type="button"
               onClick={goNext}
-              disabled={currentIdx >= sections.length - 1}
-              className={[
+              disabled={currentIdx >= SECTION_IDS.length - 1}
+              className={cn(
                 "rounded-xl px-3 py-2 text-xs font-extrabold transition",
-                currentIdx >= sections.length - 1
+                currentIdx >= SECTION_IDS.length - 1
                   ? "cursor-not-allowed text-white/35"
-                  : "text-white/85 hover:bg-white/10",
-              ].join(" ")}
+                  : "text-white/85 hover:bg-white/10"
+              )}
             >
               Suivant ↓
             </button>
@@ -807,397 +603,325 @@ export default function Home() {
         </div>
       </div>
 
-      {/* -------------------------------- PAGE 1 : TRIPTYQUE HERO ------------------------------ */}
-      <SnapSection
-        id="triphero"
-        variant="dark"
-        className={[
-          "min-h-[200svh]",
-          "bg-[linear-gradient(135deg,rgba(7,18,24,1),rgba(6,28,36,1),rgba(7,18,24,1))]",
-        ].join(" ")}
-      >
-        <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
-          <Image src={S_COURSE2} alt="" fill className="object-cover" priority />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.72),rgba(7,18,24,.92))]" />
-        </div>
+      {/* -------------------------------- PAGE 1 : HERO BANNIÈRE ------------------------------ */}
+      <SectionShell id="home" className="pt-8 pb-14 sm:pt-10 sm:pb-18 md:pt-12 md:pb-20">
+        <div className="grid gap-8">
+          <Reveal>
+            <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+              <TopPill>Application sportive</TopPill>
 
-        <div className="sticky z-20" style={{ top: 0, height: "100svh" }}>
-          <div className="relative h-full w-full">
-            <div
-              className="relative h-full w-full overflow-hidden"
-              style={{
-                borderRadius: `${tripRadius}px`,
-                boxShadow: `0 40px 140px rgba(0,0,0,${tripShadow})`,
-              }}
-            >
-              <div
-                className="absolute inset-0"
-                style={{ perspective: "1200px", transformStyle: "preserve-3d" }}
-              >
-                <div className="absolute inset-0 flex gap-0">
-                  <div className="relative h-full w-1/3 overflow-hidden">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        transform: `translate3d(${t1X}px, ${t1Y}px, ${t1Z}px) rotate(${t1R}deg)`,
-                        willChange: "transform",
-                      }}
-                    >
-                      <Image
-                        src={TRIP_1}
-                        alt="Triptique 1"
-                        fill
-                        priority
-                        unoptimized
-                        style={{ objectFit: "contain", objectPosition: "top center" }}
-                      />
-                    </div>
-                  </div>
+              <h1 className="mt-5 text-4xl font-extrabold leading-[1.03] sm:text-[2.9rem] md:text-6xl">
+                Même passion.
+                <br />
+                Même tempo.
+              </h1>
 
-                  <div className="relative h-full w-1/3 overflow-hidden">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        transform: `translate3d(${t2X}px, ${t2Y}px, ${t2Z}px) rotate(${t2R}deg)`,
-                        willChange: "transform",
-                      }}
-                    >
-                      <Image
-                        src={TRIP_2}
-                        alt="Triptique 2"
-                        fill
-                        priority
-                        unoptimized
-                        style={{ objectFit: "contain", objectPosition: "top center" }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="relative h-full w-1/3 overflow-hidden">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        transform: `translate3d(${t3X}px, ${t3Y}px, ${t3Z}px) rotate(${t3R}deg)`,
-                        willChange: "transform",
-                      }}
-                    >
-                      <Image
-                        src={TRIP_3}
-                        alt="Triptique 3"
-                        fill
-                        priority
-                        unoptimized
-                        style={{ objectFit: "contain", objectPosition: "top center" }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    opacity: 0.1 + t * 0.22,
-                    background:
-                      "linear-gradient(90deg, rgba(255,255,255,0) 33.2%, rgba(255,255,255,.18) 33.35%, rgba(255,255,255,0) 33.5%, rgba(255,255,255,0) 66.5%, rgba(255,255,255,.18) 66.65%, rgba(255,255,255,0) 66.8%)",
-                    mixBlendMode: "overlay",
-                  }}
-                />
-
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.12),rgba(7,18,24,.02),rgba(7,18,24,.55))]" />
-              </div>
-
-              {/* ✅ 2 BOX UNIQUEMENT (App Store / Google Play) */}
-              <div className="absolute inset-x-0 bottom-10 sm:bottom-24">
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(180deg,rgba(7,18,24,0),rgba(7,18,24,.75))]" />
-                <div className="relative px-5 pb-6">
-                  <div className="mx-auto max-w-6xl">
-                    <div
-                      id="download"
-                      className={[
-                        "grid scroll-mt-[84px] grid-cols-1 gap-3 sm:grid-cols-2",
-                        "translate-y-[-36px] sm:translate-y-0",
-                      ].join(" ")}
-                    >
-                      <DownloadButton
-                        href={APP_STORE_URL}
-                        store="appstore"
-                        showQr
-                        qrHref={APP_STORE_URL}
-                        ratingValue={APP_STORE_RATING}
-                      />
-                      <DownloadButton
-                        href={PLAY_STORE_URL}
-                        store="play"
-                        showQr
-                        qrHref={PLAY_STORE_URL}
-                        ratingValue={PLAY_STORE_RATING}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={[
-                  "absolute left-4 sm:left-5",
-                  "top-[calc(env(safe-area-inset-top)+12px)] sm:top-5",
-                  "max-w-[72vw] sm:max-w-none",
-                  "rounded-2xl border border-white/14 bg-white/10 backdrop-blur",
-                  "px-2.5 py-1.5 sm:px-3 sm:py-2",
-                  "text-[10px] sm:text-xs font-extrabold text-white/90",
-                  "leading-tight",
-                  "[@media(max-height:740px)]:hidden",
-                ].join(" ")}
-              >
-                Trouve ton prochain partenaire d&apos;entraînement
-              </div>
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/74 sm:text-[17px]">
+                Trouve des partenaires d’entraînement, rejoins des événements sportifs et organise
+                tes prochaines sessions.
+              </p>
             </div>
+          </Reveal>
+
+          <Reveal delayMs={90}>
+            <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-[0_24px_80px_rgba(0,0,0,.28)]">
+              <Image
+                src={BANNER}
+                alt="Bannière TEMPO"
+                width={1825}
+                height={768}
+                priority
+                className="block h-auto w-full"
+                sizes="100vw"
+                unoptimized
+              />
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_.95fr]">
+            <Reveal delayMs={120}>
+              <div className="rounded-[30px] border border-white/10 bg-[radial-gradient(900px_300px_at_0%_0%,rgba(131,199,177,.16),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))] p-6 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur md:p-8">
+                <TopPill>Pourquoi TEMPO</TopPill>
+
+                <h2 className="mt-6 text-3xl font-extrabold leading-[1.05] text-white sm:text-4xl">
+                  Une landing page plus propre, plus lisible, plus mobile-friendly.
+                </h2>
+
+                <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/76 sm:text-[17px]">
+                  Le site garde le système <span className="font-semibold text-white">suivant / précédent</span>,
+                  mais le scroll reste libre. Les visuels ne sont plus coupés par un snap forcé,
+                  et chaque écran peut être consulté naturellement jusqu’en bas.
+                </p>
+
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <Chip>Scroll fluide</Chip>
+                  <Chip>Images lisibles</Chip>
+                  <Chip>Design premium</Chip>
+                  <Chip>Responsive mobile / desktop</Chip>
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal delayMs={150}>
+              <div
+                id="download"
+                className="rounded-[30px] border border-white/10 bg-[radial-gradient(900px_300px_at_0%_0%,rgba(62,129,190,.18),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))] p-6 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur md:p-8"
+              >
+                <TopPill tone="blue">Téléchargement</TopPill>
+
+                <h2 className="mt-6 text-3xl font-extrabold leading-[1.05] text-white sm:text-4xl">
+                  Disponible sur iPhone et Android
+                </h2>
+
+                <p className="mt-5 text-base leading-relaxed text-white/76 sm:text-[17px]">
+                  Télécharge Tempo depuis l’App Store ou Google Play.
+                </p>
+
+                <div className="mt-6 grid scroll-mt-[96px] grid-cols-1 gap-3">
+                  <DownloadButton
+                    href={APP_STORE_URL}
+                    store="appstore"
+                    showQr={isMdUp}
+                    qrHref={APP_STORE_URL}
+                    ratingValue={APP_STORE_RATING}
+                  />
+                  <DownloadButton
+                    href={PLAY_STORE_URL}
+                    store="play"
+                    showQr={isMdUp}
+                    qrHref={PLAY_STORE_URL}
+                    ratingValue={PLAY_STORE_RATING}
+                  />
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
-
-        <div className="h-svh" />
-      </SnapSection>
+      </SectionShell>
 
       {/* -------------------------------- PAGE 2 : HERO ------------------------------- */}
-      <SnapSection id="hero" variant="dark" className="min-h-[120svh]">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(1100px_520px_at_20%_18%,rgba(131,199,177,.22),transparent_60%)]" />
-          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
+      <SectionShell id="hero" className="py-14 sm:py-16 md:py-20">
+        <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-10">
+          <div className="relative z-10">
+            <Reveal>
+              <FeatureTextCard
+                tone="mint"
+                badge="Matching"
+                title={
+                  <>
+                    Trouve des sportifs
+                    <br />
+                    qui suivent ton tempo.
+                  </>
+                }
+                description={
+                  <>
+                    Tempo repose sur un{" "}
+                    <span className="font-semibold text-white">algorithme de matching avancé</span>{" "}
+                    conçu pour le sport. Il combine ta{" "}
+                    <span className="font-semibold text-white">pratique</span>, ton{" "}
+                    <span className="font-semibold text-white">rythme</span>, tes{" "}
+                    <span className="font-semibold text-white">objectifs</span> et tes{" "}
+                    <span className="font-semibold text-white">habitudes d’entraînement</span>{" "}
+                    pour proposer des rencontres réellement pertinentes.
+                  </>
+                }
+                chips={["Sports communs", "Niveau", "Objectifs", "Habitudes"]}
+              />
+            </Reveal>
+          </div>
+
+          <Reveal className="relative z-0 md:justify-self-end" delayMs={160}>
+            <PhoneFrame
+              src={HERO}
+              alt="Aperçu TEMPO"
+              sizes="(max-width: 768px) 100vw, 48vw"
+            />
+          </Reveal>
         </div>
+      </SectionShell>
 
-        <div className="mx-auto flex max-w-6xl items-center px-5 pb-10" style={{ paddingTop: HEADER_H }}>
-          <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-            <div className="relative z-10">
-              <Reveal>
-                <h1 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
-                  <span className="block">Trouve des sportifs</span>
-                  <span className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
-                    <span className="leading-none">qui suivent</span>
-                    <span className="leading-none text-white/90">ton </span>
-                    <span className="relative inline-flex items-center leading-none"> </span>
-                    <span className="leading-none text-white/80">Tempo.</span>
-                  </span>
-                </h1>
-              </Reveal>
+      {/* -------------------------------- PAGE 3 : ÉVÉNEMENTS ------------------------------- */}
+      <SectionShell id="ideas" className="py-14 sm:py-16 md:py-20">
+        <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-10">
+          <Reveal className="relative z-0 md:justify-self-start" delayMs={140}>
+            <PhoneFrame
+              src={STORE_3}
+              alt="Événements TEMPO"
+              sizes="(max-width: 768px) 100vw, 48vw"
+            />
+          </Reveal>
 
-              <Reveal delayMs={130}>
-                <p className="mt-7 max-w-xl text-base leading-relaxed text-white/78">
-                  Tempo repose sur un{" "}
-                  <span className="font-semibold text-white">algorithme de matching avancé</span>{" "}
-                  conçu pour le sport : il combine ta{" "}
-                  <span className="font-semibold text-white">pratique</span>, ton{" "}
-                  <span className="font-semibold text-white">rythme</span>, tes{" "}
-                  <span className="font-semibold text-white">objectifs</span> et tes{" "}
-                  <span className="font-semibold text-white">habitudes d’entraînement</span>{" "}
-                  pour proposer des rencontres réellement pertinentes.
-                </p>
-              </Reveal>
-            </div>
-
-            <Reveal className="md:justify-self-end relative z-0" delayMs={160}>
-              <div className="relative">
-                <div className="relative overflow-hidden" style={heroCardStyle}>
-                  <Image
-                    src={HERO}
-                    alt="Aperçu TEMPO"
-                    width={1400}
-                    height={1000}
-                    className="block h-auto w-full object-cover"
-                    priority
-                    unoptimized
-                  />
-                </div>
-              </div>
+          <div className="relative z-10">
+            <Reveal>
+              <FeatureTextCard
+                tone="blue"
+                badge="Événements"
+                title={
+                  <>
+                    Un lieu.
+                    <br />
+                    Une date.
+                  </>
+                }
+                description={
+                  <>
+                    Crée ou rejoins un{" "}
+                    <span className="font-semibold text-white">événement sportif</span> près de
+                    chez toi, et trouve des partenaires qui partagent ton rythme. L’interface met
+                    en avant l’essentiel : date, heure, lieu et visibilité.
+                  </>
+                }
+                chips={["Date", "Heure", "Lieu", "Public / privé"]}
+              />
             </Reveal>
           </div>
         </div>
-      </SnapSection>
+      </SectionShell>
 
-      {/* -------------------------------- PAGE 3 : TEXTE À GAUCHE / IMAGE À DROITE ------------------------------- */}
-      <SnapSection id="ideas" variant="dark" className="min-h-[120svh]">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(1100px_520px_at_20%_18%,rgba(131,199,177,.22),transparent_60%)]" />
-          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
-        </div>
-
-        <div className="mx-auto flex max-w-6xl items-center px-5 pb-10" style={{ paddingTop: HEADER_H }}>
-          <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-            {/* ✅ Texte en 1er => à gauche sur web (md+) */}
-            <div className="relative z-10">
-              <Reveal>
-                <h2 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
-                  <span className="block">Un lieu.</span>
-                  <span className="block text-white/90">Une date.</span>
-                </h2>
-              </Reveal>
-
-              <Reveal delayMs={130}>
-                <p className="mt-7 max-w-xl text-base leading-relaxed text-white/78">
-                  Crée ou rejoins un{" "}
-                  <span className="font-semibold text-white">événement sportif</span>{" "}
-                  près de chez toi, et trouve des partenaires qui partagent ton rythme.
-                </p>
-              </Reveal>
-            </div>
-
-            {/* ✅ Image en 2e => à droite sur web (md+). Transform OFF sur mobile */}
-            <Reveal className="md:justify-self-end relative z-0" delayMs={140}>
-              <div className="relative">
-                <div className="relative overflow-hidden" style={ideasCardStyle}>
-                  <Image
-                    src={STORE_3}
-                    alt="Événements TEMPO"
-                    width={1400}
-                    height={1000}
-                    className="block h-auto w-full object-cover"
-                    priority
-                    unoptimized
-                  />
-                </div>
-              </div>
+      {/* -------------------------------- PAGE 4 : PARTENAIRES / MESSAGES ------------------------------- */}
+      <SectionShell id="hyrox" className="py-14 sm:py-16 md:py-20">
+        <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-10">
+          <div className="relative z-10">
+            <Reveal>
+              <FeatureTextCard
+                tone="mint"
+                badge="Messages"
+                title={
+                  <>
+                    Un match.
+                    <br />
+                    Un partenaire.
+                  </>
+                }
+                description={
+                  <>
+                    Discute, propose une session et{" "}
+                    <span className="font-semibold text-white">planifie</span> ta prochaine sortie
+                    en quelques clics. Une fois le match créé, la conversation démarre
+                    immédiatement et reste simple à utiliser sur mobile.
+                  </>
+                }
+                chips={["Nouveaux matchs", "Conversations", "Planification", "Mobile-first"]}
+              />
             </Reveal>
           </div>
+
+          <Reveal className="relative z-0 md:justify-self-end" delayMs={160}>
+            <PhoneFrame
+              src={STORE_4}
+              alt="Partenaires TEMPO"
+              sizes="(max-width: 768px) 100vw, 48vw"
+            />
+          </Reveal>
         </div>
-      </SnapSection>
+      </SectionShell>
 
-      {/* -------------------------------- PAGE 4 : store_4 ------------------------------- */}
-      <SnapSection id="hyrox" variant="dark" className="min-h-[120svh]">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(1100px_520px_at_20%_18%,rgba(131,199,177,.22),transparent_60%)]" />
-          <div className="absolute inset-0 opacity-90 bg-[radial-gradient(980px_520px_at_70%_35%,rgba(62,129,190,.20),transparent_60%)]" />
-        </div>
-
-        <div className="mx-auto flex max-w-6xl items-center px-5 pb-10" style={{ paddingTop: HEADER_H }}>
-          <div className="grid w-full grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-            <div className="relative z-10">
-              <Reveal>
-                <h2 className="text-4xl font-extrabold leading-[1.03] md:text-5xl">
-                  <span className="block">Un match.</span>
-                  <span className="block text-white/90">Un partenaire.</span>
-                </h2>
-              </Reveal>
-
-              <Reveal delayMs={130}>
-                <p className="mt-7 max-w-xl text-base leading-relaxed text-white/78">
-                  Discute, propose une session et{" "}
-                  <span className="font-semibold text-white">planifie</span> ta prochaine sortie en
-                  quelques clics.
-                </p>
-              </Reveal>
-            </div>
-
-            <Reveal className="md:justify-self-end relative z-0" delayMs={160}>
-              <div className="relative">
-                <div className="relative overflow-hidden" style={hyroxCardStyle}>
-                  <Image
-                    src={STORE_4}
-                    alt="Partenaires TEMPO"
-                    width={1400}
-                    height={1000}
-                    className="block h-auto w-full object-cover"
-                    priority
-                    unoptimized
-                  />
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </SnapSection>
-
-      {/* -------------------------------- FOOTER ------------------------------ */}
-      <SnapSection id="footer" variant="dark" className="min-h-svh">
-        <div className="pointer-events-none absolute inset-0 opacity-[0.14]">
-          <Image src={S_COURSE2} alt="" fill className="object-cover" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,24,.70),rgba(7,18,24,.90))]" />
-        </div>
-
-        <footer className="mx-auto flex min-h-[calc(100svh-72px)] max-w-6xl flex-col justify-center px-5 py-12">
+      {/* -------------------------------- PAGE 5 : FOOTER ------------------------------ */}
+      <SectionShell id="footer" className="py-16 sm:py-20 md:py-24">
+        <footer className="pb-20 sm:pb-24">
           <Reveal>
-            <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-              <div>
-                <div className="flex items-center gap-3">
-                  <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                    <Image src="/favicon_tempo.svg" alt="TEMPO" fill className="object-contain p-2" />
+            <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02))] p-6 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur md:p-8">
+              <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+                <div className="max-w-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                      <Image
+                        src="/favicon_tempo.svg"
+                        alt="TEMPO"
+                        fill
+                        className="object-contain p-2"
+                      />
+                    </div>
+
+                    <div className="relative h-6 w-[104px] opacity-95">
+                      <Image src="/logo_tempo.svg" alt="TEMPO" fill className="object-contain" />
+                    </div>
                   </div>
 
-                  <div className="relative h-6 w-[104px] opacity-95">
-                    <Image src="/logo_tempo.svg" alt="TEMPO" fill className="object-contain" />
+                  <p className="mt-6 text-base leading-relaxed text-white/72">
+                    Tempo aide les sportifs à se rencontrer, à discuter et à organiser leurs
+                    prochaines sessions plus facilement.
+                  </p>
+
+                  <div className="mt-6 text-sm text-white/70">
+                    Contact :{" "}
+                    <a
+                      className="font-semibold text-white hover:underline"
+                      href={`mailto:${CONTACT_EMAIL}`}
+                    >
+                      {CONTACT_EMAIL}
+                    </a>
+                  </div>
+
+                  <div className="mt-3 text-sm text-white/70">
+                    Instagram :{" "}
+                    <a
+                      className="font-semibold text-white hover:underline"
+                      href={INSTAGRAM_TEMPO_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      @jointhetempo.app ↗
+                    </a>
                   </div>
                 </div>
 
-                <div className="mt-6 text-sm text-white/70">
-                  Contact :{" "}
-                  <a className="font-semibold text-white hover:underline" href={`mailto:${CONTACT_EMAIL}`}>
-                    {CONTACT_EMAIL}
-                  </a>
-                </div>
-
-                <div className="mt-3 text-sm text-white/70">
-                  Instagram :{" "}
-                  <a
-                    className="font-semibold text-white hover:underline"
-                    href={INSTAGRAM_TEMPO_URL}
-                    target="_blank"
-                    rel="noreferrer"
+                <div className="flex flex-col gap-3 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("home")}
+                    className="text-left text-white/70 hover:text-white"
                   >
-                    @jointhetempo.app ↗
-                  </a>
+                    Accueil ↗
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("hero")}
+                    className="text-left text-white/70 hover:text-white"
+                  >
+                    L’app ↗
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("ideas")}
+                    className="text-left text-white/70 hover:text-white"
+                  >
+                    Événements ↗
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("hyrox")}
+                    className="text-left text-white/70 hover:text-white"
+                  >
+                    Partenaires ↗
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("download")}
+                    className="text-left text-white/70 hover:text-white"
+                  >
+                    Télécharger ↗
+                  </button>
                 </div>
-              </div>
 
-              <div className="flex flex-col gap-3 text-sm">
-                <button
-                  type="button"
-                  onClick={() => scrollToId("triphero")}
-                  className="text-left text-white/70 hover:text-white"
-                >
-                  Accueil ↗
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollToId("hero")}
-                  className="text-left text-white/70 hover:text-white"
-                >
-                  L’app ↗
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollToId("ideas")}
-                  className="text-left text-white/70 hover:text-white"
-                >
-                  Événements ↗
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollToId("hyrox")}
-                  className="text-left text-white/70 hover:text-white"
-                >
-                  Partenaires ↗
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollToId("download")}
-                  className="text-left text-white/70 hover:text-white"
-                >
-                  Télécharger ↗
-                </button>
-              </div>
+                <div className="flex flex-col gap-3 text-sm">
+                  <a className="text-white/70 hover:text-white" href="/cgu">
+                    CGU ↗
+                  </a>
+                  <a className="text-white/70 hover:text-white" href="/privacy">
+                    Politique de confidentialité ↗
+                  </a>
 
-              <div className="flex flex-col gap-3 text-sm">
-                <a className="text-white/70 hover:text-white" href="/cgu">
-                  CGU ↗
-                </a>
-                <a className="text-white/70 hover:text-white" href="/privacy">
-                  Politique de confidentialité ↗
-                </a>
-
-                <div className="mt-2 text-xs text-white/45">© {new Date().getFullYear()} TEMPO. Tous droits réservés.</div>
+                  <div className="mt-2 text-xs text-white/45">
+                    © {new Date().getFullYear()} TEMPO. Tous droits réservés.
+                  </div>
+                </div>
               </div>
             </div>
           </Reveal>
         </footer>
-      </SnapSection>
+      </SectionShell>
     </div>
   );
 }
