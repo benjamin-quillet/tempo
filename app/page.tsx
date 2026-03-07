@@ -116,14 +116,6 @@ function TopPill({
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/78">
-      {children}
-    </span>
-  );
-}
-
 /* ------------------------------ Rating Stars ----------------------------- */
 function Stars({
   value,
@@ -293,25 +285,16 @@ function DownloadButton({
 }
 
 /* ------------------------------ Helpers ----------------------------- */
-const SECTION_IDS = ["home", "hero", "ideas", "hyrox", "footer"] as const;
-type SectionId = (typeof SECTION_IDS)[number];
-
-const SECTION_LABELS: Record<SectionId, string> = {
-  home: "Accueil",
-  hero: "L’app",
-  ideas: "Événements",
-  hyrox: "Sportifs",
-  footer: "Contact",
-};
-
 function PhoneFrame({
   src,
   alt,
   sizes,
+  priority = false,
 }: {
   src: string;
   alt: string;
   sizes: string;
+  priority?: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/5 p-2 shadow-[0_24px_80px_rgba(0,0,0,.26)] sm:p-3">
@@ -323,6 +306,7 @@ function PhoneFrame({
           height={1365}
           className="block h-auto w-full"
           sizes={sizes}
+          priority={priority}
           unoptimized
         />
       </div>
@@ -330,45 +314,158 @@ function PhoneFrame({
   );
 }
 
-function FeatureTextCard({
-  tone = "mint",
-  badge,
-  title,
-  description,
-  chips,
+function InstagramCard({
+  href,
+  handle,
 }: {
-  tone?: "mint" | "blue";
-  badge: string;
-  title: React.ReactNode;
-  description: React.ReactNode;
-  chips: string[];
+  href: string;
+  handle: string;
 }) {
-  const shell =
-    tone === "mint"
-      ? "bg-[radial-gradient(900px_300px_at_0%_0%,rgba(131,199,177,.16),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))]"
-      : "bg-[radial-gradient(900px_300px_at_0%_0%,rgba(62,129,190,.18),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))]";
-
   return (
-    <div
+    <a
+      id="join"
+      href={href}
+      target="_blank"
+      rel="noreferrer"
       className={cn(
-        "rounded-[30px] border border-white/10 p-6 shadow-[0_30px_90px_rgba(0,0,0,.22)] sm:p-8 md:p-10",
-        shell
+        "group relative block h-full scroll-mt-[96px] overflow-hidden rounded-[30px] border border-white/10",
+        "bg-[radial-gradient(700px_280px_at_0%_0%,rgba(244,114,182,.20),transparent_55%),radial-gradient(700px_280px_at_100%_0%,rgba(251,191,36,.18),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))]",
+        "p-6 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur transition hover:-translate-y-0.5 md:p-8"
       )}
     >
-      <TopPill tone={tone}>{badge}</TopPill>
+      <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(800px_240px_at_20%_0%,rgba(255,255,255,.18),transparent_50%)] opacity-0 transition group-hover:opacity-100" />
 
-      <h2 className="mt-6 text-4xl font-extrabold leading-[1.03] sm:text-[2.8rem] md:text-5xl">
-        {title}
-      </h2>
+      <div className="relative flex h-full flex-col justify-between gap-8">
+        <div>
+          <TopPill>Instagram</TopPill>
 
-      <div className="mt-7 max-w-xl text-base leading-relaxed text-white/78 sm:text-[17px]">
-        {description}
+          <div className="mt-6 flex items-center gap-4">
+            <Image
+              src="/logo_instagram.png"
+              alt="Instagram"
+              width={64}
+              height={64}
+              className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20"
+              unoptimized
+            />
+
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
+                Rejoins Tempo
+              </div>
+              <div className="mt-1 text-xl font-extrabold text-white sm:text-2xl">{handle}</div>
+            </div>
+          </div>
+
+          <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/76 sm:text-[17px]">
+            Retrouve les dernières nouveautés de la communauté Tempo sur Instagram.
+          </p>
+        </div>
+
+        <div className="inline-flex items-center gap-2 text-sm font-extrabold text-white/88">
+          Voir le compte
+          <span className="transition group-hover:translate-x-0.5">↗</span>
+        </div>
       </div>
+    </a>
+  );
+}
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {chips.map((chip) => (
-          <Chip key={chip}>{chip}</Chip>
-        ))}
+function ScreensCarousel({
+  images,
+}: {
+  images: Array<{ src: string; alt: string }>;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const goPrev = useCallback(() => {
+    setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  }, [images.length]);
+
+  const goNext = useCallback(() => {
+    setActiveIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  }, [images.length]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [goPrev, goNext]);
+
+  return (
+    <div className="rounded-[30px] border border-white/10 bg-[radial-gradient(900px_300px_at_0%_0%,rgba(62,129,190,.18),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))] p-4 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur sm:p-5 md:p-6">
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <TopPill tone="blue">Aperçus</TopPill>
+            <h2 className="mt-4 text-3xl font-extrabold leading-[1.05] text-white sm:text-4xl md:text-5xl">
+              Découvre l’app
+            </h2>
+          </div>
+        </div>
+
+        <div className="relative overflow-hidden rounded-[28px]">
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+          >
+            {images.map((image, index) => (
+              <div key={image.src} className="min-w-full">
+                <div className="mx-auto max-w-[340px] sm:max-w-[380px] md:max-w-[420px]">
+                  <PhoneFrame
+                    src={image.src}
+                    alt={image.alt}
+                    sizes="(max-width: 768px) 92vw, 420px"
+                    priority={index === 0}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={goPrev}
+            aria-label="Image précédente"
+            className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/12 bg-[rgba(7,18,24,.68)] text-base font-extrabold text-white/90 backdrop-blur transition hover:bg-[rgba(7,18,24,.84)]"
+          >
+            ←
+          </button>
+
+          <button
+            type="button"
+            onClick={goNext}
+            aria-label="Image suivante"
+            className="absolute right-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/12 bg-[rgba(7,18,24,.68)] text-base font-extrabold text-white/90 backdrop-blur transition hover:bg-[rgba(7,18,24,.84)]"
+          >
+            →
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                aria-label={`Aller à l’image ${index + 1}`}
+                onClick={() => setActiveIndex(index)}
+                className={cn(
+                  "h-2.5 rounded-full transition-all",
+                  activeIndex === index ? "w-8 bg-white" : "w-2.5 bg-white/28 hover:bg-white/45"
+                )}
+              />
+            ))}
+          </div>
+
+          <div className="text-sm font-semibold text-white/55">
+            {String(activeIndex + 1).padStart(2, "0")} / {String(images.length).padStart(2, "0")}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -390,16 +487,18 @@ export default function Home() {
   const HEADER_H = 72;
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const [currentIdx, setCurrentIdx] = useState(0);
 
   const scrollToId = useCallback(
     (id: string) => {
       const scroller = scrollerRef.current;
-      const el = document.getElementById(id) as HTMLElement | null;
+      const el = document.getElementById(id);
       if (!scroller || !el) return;
 
+      const scrollerRect = scroller.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const currentScrollTop = scroller.scrollTop;
+      const rawTop = currentScrollTop + (elRect.top - scrollerRect.top) - HEADER_H - 12;
       const maxTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-      const rawTop = el.offsetTop - HEADER_H - 12;
       const top = Math.min(Math.max(0, rawTop), maxTop);
 
       scroller.scrollTo({ top, behavior: "smooth" });
@@ -407,70 +506,20 @@ export default function Home() {
     [HEADER_H]
   );
 
-  const updateCurrentIdx = useCallback(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    const maxTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-
-    if (maxTop > 0 && scroller.scrollTop >= maxTop - 4) {
-      setCurrentIdx(SECTION_IDS.length - 1);
-      return;
-    }
-
-    const probeY = scroller.scrollTop + HEADER_H + scroller.clientHeight * 0.35;
-
-    let idx = 0;
-    for (let i = 0; i < SECTION_IDS.length; i++) {
-      const el = document.getElementById(SECTION_IDS[i]) as HTMLElement | null;
-      if (el && el.offsetTop <= probeY) idx = i;
-    }
-
-    setCurrentIdx(idx);
-  }, [HEADER_H]);
-
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = window.requestAnimationFrame(() => {
-        raf = 0;
-        updateCurrentIdx();
-      });
-    };
-
-    const onResize = () => updateCurrentIdx();
-
-    scroller.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-    updateCurrentIdx();
-
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-      scroller.removeEventListener("scroll", onScroll as EventListener);
-      window.removeEventListener("resize", onResize);
-    };
-  }, [updateCurrentIdx]);
-
-  const goPrev = useCallback(() => {
-    const idx = Math.max(0, currentIdx - 1);
-    scrollToId(SECTION_IDS[idx]);
-  }, [currentIdx, scrollToId]);
-
-  const goNext = useCallback(() => {
-    const idx = Math.min(SECTION_IDS.length - 1, currentIdx + 1);
-    scrollToId(SECTION_IDS[idx]);
-  }, [currentIdx, scrollToId]);
-
-  const currentSection = SECTION_IDS[currentIdx] ?? "home";
-
-  const HERO = "/Images_store_2.jpeg";
+  const STORE_1 = "/Images_store_1.jpeg";
+  const STORE_2 = "/Images_store_2.jpeg";
   const STORE_3 = "/Images_store_3.jpeg";
   const STORE_4 = "/Images_store_4.jpeg";
+  const STORE_5 = "/Images_store_5.jpeg";
   const BANNER = "/Banniere.png";
+
+  const carouselImages = [
+    { src: STORE_1, alt: "Aperçu TEMPO 1" },
+    { src: STORE_2, alt: "Aperçu TEMPO 2" },
+    { src: STORE_3, alt: "Aperçu TEMPO 3" },
+    { src: STORE_4, alt: "Aperçu TEMPO 4" },
+    { src: STORE_5, alt: "Aperçu TEMPO 5" },
+  ];
 
   return (
     <div
@@ -506,22 +555,11 @@ export default function Home() {
           </button>
 
           <nav className="hidden items-center gap-6 text-sm text-white/70 md:flex">
+            <button type="button" onClick={() => scrollToId("join")} className="hover:text-white">
+              Rejoins Tempo
+            </button>
             <button type="button" onClick={() => scrollToId("hero")} className="hover:text-white">
-              L’app
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToId("ideas")}
-              className="hover:text-white"
-            >
-              Événements
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToId("hyrox")}
-              className="hover:text-white"
-            >
-              Sportifs
+              Découvre l&apos;app
             </button>
             <button
               type="button"
@@ -553,48 +591,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* NAV “Suivant / Précédent” */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-[60]">
-        <div className="mx-auto flex max-w-6xl items-center justify-center px-4 sm:justify-end sm:px-5">
-          <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/12 bg-white/10 px-2 py-2 shadow-[0_18px_60px_rgba(0,0,0,.28)] backdrop-blur">
-            <div className="hidden min-w-[110px] px-2 text-center text-[11px] font-extrabold tracking-wide text-white/45 sm:block">
-              {String(currentIdx + 1).padStart(2, "0")} /{" "}
-              {String(SECTION_IDS.length).padStart(2, "0")} · {SECTION_LABELS[currentSection]}
-            </div>
-
-            <button
-              type="button"
-              onClick={goPrev}
-              disabled={currentIdx === 0}
-              className={cn(
-                "rounded-xl px-3 py-2 text-xs font-extrabold transition",
-                currentIdx === 0
-                  ? "cursor-not-allowed text-white/35"
-                  : "text-white/85 hover:bg-white/10"
-              )}
-            >
-              ↑ Précédent
-            </button>
-
-            <div className="mx-1 h-6 w-px bg-white/12" />
-
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={currentIdx >= SECTION_IDS.length - 1}
-              className={cn(
-                "rounded-xl px-3 py-2 text-xs font-extrabold transition",
-                currentIdx >= SECTION_IDS.length - 1
-                  ? "cursor-not-allowed text-white/35"
-                  : "text-white/85 hover:bg-white/10"
-              )}
-            >
-              Suivant ↓
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* -------------------------------- PAGE 1 : HERO BANNIÈRE ------------------------------ */}
       <SectionShell id="home" className="pt-8 pb-14 sm:pt-10 sm:pb-18 md:pt-12 md:pb-20">
         <div className="grid gap-8">
@@ -610,7 +606,7 @@ export default function Home() {
 
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/74 sm:text-[17px]">
                 Trouve des partenaires d’entraînement, rejoins des événements sportifs et organise
-                tes prochaines sessions simplement.
+                tes prochaines sessions.
               </p>
             </div>
           </Reveal>
@@ -632,30 +628,13 @@ export default function Home() {
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_.95fr]">
             <Reveal delayMs={120}>
-              <div className="rounded-[30px] border border-white/10 bg-[radial-gradient(900px_300px_at_0%_0%,rgba(131,199,177,.16),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))] p-6 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur md:p-8">
-                <TopPill>Pourquoi TEMPO</TopPill>
-
-                <h2 className="mt-6 text-3xl font-extrabold leading-[1.05] text-white sm:text-4xl">
-                  Le réseau pensé pour trouver ton prochain partenaire de sport.
-                </h2>
-
-                <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/76 sm:text-[17px]">
-                  Tempo te met en relation avec des sportifs près de chez toi qui partagent les
-                  mêmes centres d’intérêt.
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-2">
-                  <Chip>Rencontres</Chip>
-                  <Chip>Événements sportifs</Chip>
-                  <Chip>Discussions avec centre d’intérêt</Chip>
-                </div>
-              </div>
+              <InstagramCard href={INSTAGRAM_TEMPO_URL} handle="@jointhetempo.app" />
             </Reveal>
 
             <Reveal delayMs={150}>
               <div
                 id="download"
-                className="rounded-[30px] border border-white/10 bg-[radial-gradient(900px_300px_at_0%_0%,rgba(62,129,190,.18),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))] p-6 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur md:p-8"
+                className="scroll-mt-[96px] rounded-[30px] border border-white/10 bg-[radial-gradient(900px_300px_at_0%_0%,rgba(62,129,190,.18),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))] p-6 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur md:p-8"
               >
                 <TopPill tone="blue">Téléchargement</TopPill>
 
@@ -667,7 +646,7 @@ export default function Home() {
                   Télécharge Tempo depuis l’App Store ou Google Play.
                 </p>
 
-                <div className="mt-6 grid scroll-mt-[96px] grid-cols-1 gap-3">
+                <div className="mt-6 grid grid-cols-1 gap-3">
                   <DownloadButton
                     href={APP_STORE_URL}
                     store="appstore"
@@ -689,229 +668,93 @@ export default function Home() {
         </div>
       </SectionShell>
 
-      {/* -------------------------------- PAGE 2 : HERO ------------------------------- */}
+      {/* -------------------------------- PAGE 2 : CARROUSEL ------------------------------- */}
       <SectionShell id="hero" className="py-14 sm:py-16 md:py-20">
-        <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-10">
-          <div className="relative z-10">
-            <Reveal>
-              <FeatureTextCard
-                tone="mint"
-                badge="Matching"
-                title={
-                  <>
-                    Trouve des sportifs
-                    <br />
-                    qui suivent ton tempo.
-                  </>
-                }
-                description={
-                  <>
-                    Tempo repose sur un{" "}
-                    <span className="font-semibold text-white">algorithme de matching avancé</span>{" "}
-                    conçu pour le sport. Il combine ta{" "}
-                    <span className="font-semibold text-white">pratique</span>, ton{" "}
-                    <span className="font-semibold text-white">rythme</span>, tes{" "}
-                    <span className="font-semibold text-white">objectifs</span> et tes{" "}
-                    <span className="font-semibold text-white">habitudes d’entraînement</span>{" "}
-                    pour proposer des rencontres réellement pertinentes.
-                  </>
-                }
-                chips={["Sports communs", "Niveau", "Objectifs", "Habitudes"]}
-              />
-            </Reveal>
-          </div>
-
-          <Reveal className="relative z-0 md:justify-self-end" delayMs={160}>
-            <PhoneFrame
-              src={HERO}
-              alt="Aperçu TEMPO"
-              sizes="(max-width: 768px) 100vw, 48vw"
-            />
-          </Reveal>
-        </div>
+        <Reveal>
+          <ScreensCarousel images={carouselImages} />
+        </Reveal>
       </SectionShell>
 
-      {/* -------------------------------- PAGE 3 : ÉVÉNEMENTS ------------------------------- */}
-      <SectionShell id="ideas" className="py-14 sm:py-16 md:py-20">
-        <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-10">
-          <Reveal className="relative z-0 md:justify-self-start" delayMs={140}>
-            <PhoneFrame
-              src={STORE_3}
-              alt="Événements TEMPO"
-              sizes="(max-width: 768px) 100vw, 48vw"
-            />
-          </Reveal>
-
-          <div className="relative z-10">
+      {/* -------------------------------- FOOTER ------------------------------ */}
+      <SectionShell id="footer" className="pt-16 pb-8 sm:pt-20 sm:pb-10 md:pt-24 md:pb-12">
+        <footer>
+          <div className="border-t border-white/10 pt-8">
             <Reveal>
-              <FeatureTextCard
-                tone="blue"
-                badge="Événements"
-                title={
-                  <>
-                    Un lieu.
-                    <br />
-                    Une date.
-                  </>
-                }
-                description={
-                  <>
-                    Crée ou rejoins un{" "}
-                    <span className="font-semibold text-white">événement sportif</span> près de
-                    chez toi, et retrouve facilement des partenaires autour de l’essentiel : le{" "}
-                    <span className="font-semibold text-white">sport</span>, la{" "}
-                    <span className="font-semibold text-white">date</span> et le{" "}
-                    <span className="font-semibold text-white">lieu</span>.
-                  </>
-                }
-                chips={["Date", "Lieu", "Sport"]}
-              />
-            </Reveal>
-          </div>
-        </div>
-      </SectionShell>
-
-      {/* -------------------------------- PAGE 4 : SPORTIFS / MESSAGES ------------------------------- */}
-      <SectionShell id="hyrox" className="py-14 sm:py-16 md:py-20">
-        <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-10">
-          <div className="relative z-10">
-            <Reveal>
-              <FeatureTextCard
-                tone="mint"
-                badge="Messages"
-                title={
-                  <>
-                    Un match.
-                    <br />
-                    Un partenaire.
-                  </>
-                }
-                description={
-                  <>
-                    Discute, propose une session et{" "}
-                    <span className="font-semibold text-white">planifie</span> ta prochaine sortie
-                    en quelques clics. Une fois le match créé, la conversation démarre
-                    immédiatement et reste simple à utiliser.
-                  </>
-                }
-                chips={["Matchs", "Conversations", "Centres d’intérêts"]}
-              />
-            </Reveal>
-          </div>
-
-          <Reveal className="relative z-0 md:justify-self-end" delayMs={160}>
-            <PhoneFrame
-              src={STORE_4}
-              alt="Sportifs TEMPO"
-              sizes="(max-width: 768px) 100vw, 48vw"
-            />
-          </Reveal>
-        </div>
-      </SectionShell>
-
-      {/* -------------------------------- PAGE 5 : FOOTER ------------------------------ */}
-      <SectionShell id="footer" className="py-16 sm:py-20 md:py-24">
-        <footer className="pb-20 sm:pb-24">
-          <Reveal>
-            <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02))] p-6 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur md:p-8">
               <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-                <div className="max-w-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                      <Image
-                        src="/favicon_tempo.svg"
-                        alt="TEMPO"
-                        fill
-                        className="object-contain p-2"
-                      />
-                    </div>
-
-                    <div className="relative h-6 w-[104px] opacity-95">
-                      <Image src="/logo_tempo.svg" alt="TEMPO" fill className="object-contain" />
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                    <Image
+                      src="/favicon_tempo.svg"
+                      alt="TEMPO"
+                      fill
+                      className="object-contain p-2"
+                    />
                   </div>
 
-                  <p className="mt-6 text-base leading-relaxed text-white/72">
-                    Tempo aide les sportifs à se rencontrer, à discuter et à organiser leurs
-                    prochaines sessions plus facilement.
-                  </p>
-
-                  <div className="mt-6 text-sm text-white/70">
-                    Contact :{" "}
-                    <a
-                      className="font-semibold text-white hover:underline"
-                      href={`mailto:${CONTACT_EMAIL}`}
-                    >
-                      {CONTACT_EMAIL}
-                    </a>
-                  </div>
-
-                  <div className="mt-3 text-sm text-white/70">
-                    Instagram :{" "}
-                    <a
-                      className="font-semibold text-white hover:underline"
-                      href={INSTAGRAM_TEMPO_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      @jointhetempo.app ↗
-                    </a>
+                  <div className="relative h-6 w-[104px] opacity-95">
+                    <Image src="/logo_tempo.svg" alt="TEMPO" fill className="object-contain" />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 text-sm">
+                <div className="flex flex-col gap-2 text-sm text-white/70">
                   <button
                     type="button"
-                    onClick={() => scrollToId("home")}
-                    className="text-left text-white/70 hover:text-white"
+                    onClick={() => scrollToId("join")}
+                    className="text-left hover:text-white"
                   >
-                    Accueil ↗
+                    Rejoins Tempo ↗
                   </button>
                   <button
                     type="button"
                     onClick={() => scrollToId("hero")}
-                    className="text-left text-white/70 hover:text-white"
+                    className="text-left hover:text-white"
                   >
-                    L’app ↗
+                    Découvre l&apos;app ↗
                   </button>
                   <button
                     type="button"
-                    onClick={() => scrollToId("ideas")}
-                    className="text-left text-white/70 hover:text-white"
+                    onClick={() => scrollToId("footer")}
+                    className="text-left hover:text-white"
                   >
-                    Événements ↗
+                    Contact ↗
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollToId("hyrox")}
-                    className="text-left text-white/70 hover:text-white"
+                </div>
+
+                <div className="flex flex-col gap-2 text-sm text-white/70">
+                  <a className="hover:text-white" href={`mailto:${CONTACT_EMAIL}`}>
+                    {CONTACT_EMAIL} ↗
+                  </a>
+                  <a
+                    className="hover:text-white"
+                    href={INSTAGRAM_TEMPO_URL}
+                    target="_blank"
+                    rel="noreferrer"
                   >
-                    Sportifs ↗
-                  </button>
+                    @jointhetempo.app ↗
+                  </a>
                   <button
                     type="button"
                     onClick={() => scrollToId("download")}
-                    className="text-left text-white/70 hover:text-white"
+                    className="text-left hover:text-white"
                   >
                     Télécharger ↗
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-3 text-sm">
-                  <a className="text-white/70 hover:text-white" href="/cgu">
+                <div className="flex flex-col gap-2 text-sm text-white/70">
+                  <a className="hover:text-white" href="/cgu">
                     CGU ↗
                   </a>
-                  <a className="text-white/70 hover:text-white" href="/privacy">
+                  <a className="hover:text-white" href="/privacy">
                     Politique de confidentialité ↗
                   </a>
-
                   <div className="mt-2 text-xs text-white/45">
                     © {new Date().getFullYear()} TEMPO. Tous droits réservés.
                   </div>
                 </div>
               </div>
-            </div>
-          </Reveal>
+            </Reveal>
+          </div>
         </footer>
       </SectionShell>
     </div>
