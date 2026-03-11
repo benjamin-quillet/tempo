@@ -8,6 +8,14 @@ function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
+function DesktopArrow({ className = "" }: { className?: string }) {
+  return (
+    <span aria-hidden className={cn("hidden md:inline", className)}>
+      ↗
+    </span>
+  );
+}
+
 /* --------------------------------- Reveal --------------------------------- */
 type RevealProps = {
   children: React.ReactNode;
@@ -281,9 +289,7 @@ function DownloadButton({
           </span>
         ) : null}
 
-        <span className="text-sm font-extrabold opacity-80 transition group-hover:opacity-100">
-          ↗
-        </span>
+        <DesktopArrow className="text-sm font-extrabold opacity-80 transition group-hover:opacity-100" />
       </span>
 
       <span className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition group-hover:opacity-100 bg-[radial-gradient(900px_240px_at_20%_0%,rgba(255,255,255,.35),transparent_50%)]" />
@@ -371,7 +377,7 @@ function InstagramCard({
 
         <div className="inline-flex items-center gap-2 text-sm font-extrabold text-white/88">
           Voir le compte
-          <span className="transition group-hover:translate-x-0.5">↗</span>
+          <DesktopArrow className="transition group-hover:translate-x-0.5" />
         </div>
       </div>
     </a>
@@ -618,7 +624,7 @@ export default function Home() {
               rel="noreferrer"
               className="hidden rounded-xl border border-white/10 bg-white/7 px-3 py-2 text-xs font-semibold text-white/85 backdrop-blur transition hover:bg-white/12 md:inline-flex"
             >
-              @jointhetempo.app ↗
+              @jointhetempo.app <DesktopArrow />
             </a>
 
             <button
@@ -626,7 +632,7 @@ export default function Home() {
               onClick={() => scrollToId("download")}
               className="rounded-xl border border-white/10 bg-white/8 px-3 py-2 text-xs font-extrabold text-white shadow-[0_16px_45px_rgba(0,0,0,.20)] backdrop-blur transition hover:bg-white/12"
             >
-              Télécharger ↗
+              Télécharger <DesktopArrow />
             </button>
           </div>
         </div>
@@ -748,27 +754,27 @@ export default function Home() {
                     onClick={() => scrollToId("join")}
                     className="text-left hover:text-white"
                   >
-                    Rejoins Tempo ↗
+                    Rejoins Tempo <DesktopArrow />
                   </button>
                   <button
                     type="button"
                     onClick={() => scrollToId("hero")}
                     className="text-left hover:text-white"
                   >
-                    Découvre l&apos;app ↗
+                    Découvre l&apos;app <DesktopArrow />
                   </button>
                   <button
                     type="button"
                     onClick={() => scrollToId("footer")}
                     className="text-left hover:text-white"
                   >
-                    Contact ↗
+                    Contact <DesktopArrow />
                   </button>
                 </div>
 
                 <div className="flex flex-col gap-2 text-sm text-white/70">
                   <a className="hover:text-white" href={`mailto:${CONTACT_EMAIL}`}>
-                    {CONTACT_EMAIL} ↗
+                    {CONTACT_EMAIL} <DesktopArrow />
                   </a>
                   <a
                     className="hover:text-white"
@@ -776,23 +782,23 @@ export default function Home() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    @jointhetempo.app ↗
+                    @jointhetempo.app <DesktopArrow />
                   </a>
                   <button
                     type="button"
                     onClick={() => scrollToId("download")}
                     className="text-left hover:text-white"
                   >
-                    Télécharger ↗
+                    Télécharger <DesktopArrow />
                   </button>
                 </div>
 
                 <div className="flex flex-col gap-2 text-sm text-white/70">
                   <a className="hover:text-white" href="/cgu">
-                    CGU ↗
+                    CGU <DesktopArrow />
                   </a>
                   <a className="hover:text-white" href="/privacy">
-                    Politique de confidentialité ↗
+                    Politique de confidentialité <DesktopArrow />
                   </a>
                   <div className="mt-2 text-xs text-white/45">
                     © {new Date().getFullYear()} TEMPO. Tous droits réservés.
