@@ -5,9 +5,9 @@ import { Inter } from "next/font/google";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "TEMPO — Find your training partners",
+  title: "TEMPO — Partenaires Sportifs",
   description:
-    "TEMPO connects athletes to train together: running, HYROX, CrossFit, cycling and more.",
+    "TEMPO te permet de rencontrer des partenaires sportifs pour t'entraîner, progresser et partager tes activités sportives.",
   icons: {
     icon: "/tempo-logo.png",
   },

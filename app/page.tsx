@@ -384,6 +384,8 @@ function ScreensCarousel({
   images: Array<{ src: string; alt: string }>;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchEndXRef = useRef<number | null>(null);
 
   const goPrev = useCallback(() => {
     setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -403,6 +405,33 @@ function ScreensCarousel({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goPrev, goNext]);
 
+  const onTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? null;
+    touchEndXRef.current = null;
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    touchEndXRef.current = e.touches[0]?.clientX ?? null;
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    const startX = touchStartXRef.current;
+    const endX = touchEndXRef.current;
+    const threshold = 40;
+
+    if (startX === null || endX === null) return;
+
+    const deltaX = startX - endX;
+
+    if (Math.abs(deltaX) < threshold) return;
+
+    if (deltaX > 0) {
+      goNext();
+    } else {
+      goPrev();
+    }
+  }, [goNext, goPrev]);
+
   return (
     <div className="rounded-[30px] border border-white/10 bg-[radial-gradient(900px_300px_at_0%_0%,rgba(62,129,190,.18),transparent_55%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02))] p-4 shadow-[0_24px_80px_rgba(0,0,0,.26)] backdrop-blur sm:p-5 md:p-6">
       <div className="flex flex-col gap-5">
@@ -415,7 +444,12 @@ function ScreensCarousel({
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-[28px]">
+        <div
+          className="relative overflow-hidden rounded-[28px]"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
           <div
             className="flex transition-transform duration-500 ease-out"
             style={{ transform: `translateX(-${activeIndex * 100}%)` }}
@@ -438,18 +472,18 @@ function ScreensCarousel({
             type="button"
             onClick={goPrev}
             aria-label="Image précédente"
-            className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/12 bg-[rgba(7,18,24,.68)] text-base font-extrabold text-white/90 backdrop-blur transition hover:bg-[rgba(7,18,24,.84)]"
+            className="absolute left-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(7,18,24,.52)] text-xl font-medium text-white/75 backdrop-blur transition hover:bg-[rgba(7,18,24,.72)] hover:text-white md:inline-flex"
           >
-            ←
+            ‹
           </button>
 
           <button
             type="button"
             onClick={goNext}
             aria-label="Image suivante"
-            className="absolute right-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/12 bg-[rgba(7,18,24,.68)] text-base font-extrabold text-white/90 backdrop-blur transition hover:bg-[rgba(7,18,24,.84)]"
+            className="absolute right-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(7,18,24,.52)] text-xl font-medium text-white/75 backdrop-blur transition hover:bg-[rgba(7,18,24,.72)] hover:text-white md:inline-flex"
           >
-            →
+            ›
           </button>
         </div>
 
@@ -462,8 +496,8 @@ function ScreensCarousel({
                 aria-label={`Aller à l’image ${index + 1}`}
                 onClick={() => setActiveIndex(index)}
                 className={cn(
-                  "h-2.5 rounded-full transition-all",
-                  activeIndex === index ? "w-8 bg-white" : "w-2.5 bg-white/28 hover:bg-white/45"
+                  "h-2 rounded-full transition-all",
+                  activeIndex === index ? "w-7 bg-white" : "w-2 bg-white/28 hover:bg-white/45"
                 )}
               />
             ))}
